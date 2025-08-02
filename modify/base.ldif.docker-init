@@ -1,0 +1,85 @@
+dn: ${LDAP_LOCAL_OLC_SUFFIX}
+objectClass: top
+objectClass: domain
+dc: ${LDAP_ORG_DC}
+
+dn: ${LDAP_LOCAL_ROOT_DN}
+objectClass: organizationalRole
+cn: ${LDAP_ROOT_CN}
+description: LDAP Manager
+
+dn: ou=Groups,${LDAP_LOCAL_OLC_SUFFIX}
+objectClass: organizationalUnit
+objectClass: top
+ou: Groups
+description: User Groups, Roles  
+
+dn: ou=People,${LDAP_LOCAL_OLC_SUFFIX}
+objectClass: organizationalUnit
+objectClass: top
+ou: People
+description: Users, Employee 
+
+dn: ou=Technical,${LDAP_LOCAL_OLC_SUFFIX}
+objectClass: organizationalUnit
+objectClass: top
+ou: Technical
+description: Technical Users for connections definition 
+
+dn: cn=${LDAP_TECHNICAL_USER_CN},ou=Technical,${LDAP_LOCAL_OLC_SUFFIX}
+objectClass: person
+objectClass: top
+cn: ${LDAP_TECHNICAL_USER_CN}
+sn: Technical
+description: Technical User
+userPassword: ${LDAP_TECHNICAL_USER_ENCRYPTED}
+
+dn: ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}
+objectClass: organizationalUnit
+objectClass: top
+ou: Admins
+description: Administrators for changing entry 
+
+dn: cn=Administrator,ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}
+objectClass: person
+objectClass: top
+cn: Administrator
+sn: Administrator
+description: Administrator
+userPassword: ${LDAP_TECHNICAL_USER_ENCRYPTED}
+
+#######################################################################
+# LDAP-UI Manager
+#######################################################################
+dn: uid=ldapui,ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}
+objectClass: person
+objectClass: top
+objectClass: uidObject
+cn: Fast and versatile LDAP editor
+sn: LDAP editor
+uid: ldapui
+description: User bind for connection to Fast and versatile LDAP editor https://github.com/dnknth/ldap-ui
+userPassword: ${LDAP_TECHNICAL_USER_ENCRYPTED}
+
+#######################################################################
+# Kerberos entries required for configuration 
+#######################################################################
+dn: cn=Kerberos,${LDAP_LOCAL_OLC_SUFFIX}
+objectClass: krbContainer
+objectClass: top
+cn: Kerberos
+
+dn: uid=kdc-service,${LDAP_LOCAL_OLC_SUFFIX}
+uid: kdc-service
+objectClass: account
+objectClass: simpleSecurityObject
+userPassword: ${LDAP_TECHNICAL_USER_ENCRYPTED}
+description: Account used for the Kerberos KDC
+
+dn: uid=kadmin-service,${LDAP_LOCAL_OLC_SUFFIX}
+uid: kadmin-service
+objectClass: account
+objectClass: simpleSecurityObject
+userPassword: ${LDAP_TECHNICAL_USER_ENCRYPTED}
+description: Account used for the Kerberos Admin server
+

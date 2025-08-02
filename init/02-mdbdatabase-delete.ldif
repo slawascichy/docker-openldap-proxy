@@ -1,0 +1,5 @@
+###############################################################################
+# Deleting the MDB database - first check if the index {2} is correct
+###############################################################################
+dn: olcDatabase={2}mdb,cn=config
+changetype: delete

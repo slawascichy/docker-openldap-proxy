@@ -1,0 +1,15 @@
+dn: cn=admin,ou=Groups,${LDAP_LOCAL_OLC_SUFFIX}
+objectClass: groupOfUniqueNames
+objectClass: posixGroup
+objectClass: top
+cn: admin
+gidNumber: 1002
+uniqueMember: uid=slawas,ou=People,${LDAP_LOCAL_OLC_SUFFIX}
+
+dn: cn=developers,ou=Groups,${LDAP_LOCAL_OLC_SUFFIX}
+objectClass: groupOfUniqueNames
+objectClass: posixGroup
+objectClass: top
+cn: developers
+gidNumber: 1001
+uniqueMember: uid=slawas,ou=People,${LDAP_LOCAL_OLC_SUFFIX}

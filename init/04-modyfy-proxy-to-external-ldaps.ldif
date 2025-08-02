@@ -1,0 +1,11 @@
+##############################################################################
+# Adding the 'olcDbStartTLS' parameter for 'ldaps' communication
+#
+# Required parameters:
+# --------------------
+# LDAP_PROXY_OU_NAME - the name of the organizational unit under which the connected LDAP tree should appear
+##############################################################################
+dn: olcMetaSub=${LDAP_PROXY_OU_NAME},olcDatabase={3}meta,cn=config
+changetype: modify
+add: olcDbStartTLS
+olcDbStartTLS: none

@@ -1,0 +1,72 @@
+##############################################################################
+# META database definitions
+#
+# Create a local META - PROXY database
+#
+# Required parameters:
+# --------------------
+# LDAP_LOCAL_OLC_SUFFIX      - suffix for local MDB database, e.g. "dc=docker,dc=openldap"
+# LDAP_BASED_OLC_SUFFIX      - suffix for META database, proxy, target database, e.g. "dc=scisoftware,dc=pl"
+# LDAP_ROOT_PASSWD_PLAINTEXT - superuser's plaintext password
+# LDAP_ROOT_PASSWD_ENCRYPTED - encrypted superuser's password, based on LDAP_ROOT_PASSWD_PLAINTEXT
+# LDAP_LOCAL_ROOT_DN         - super user DN from the local MDB database. This parameter is built based on the
+#                              LDAP_ROOT_CN and LDAP_LOCAL_OLC_SUFFIX parameters:
+#                              cn=${LDAP_ROOT_CN},${LDAP_LOCAL_OLC_SUFFIX} e.g., "cn=manager,dc=docker,dc=openldap"
+# LDAP_BASED_ROOT_DN         - DN of the superuser from the local META database. This parameter is built based on the
+#                              LDAP_ROOT_CN and LDAP_BASED_OLC_SUFFIX parameters:
+#                              cn=${LDAP_ROOT_CN},${LDAP_BASED_OLC_SUFFIX} e.g., "cn=manager,dc=scisoftware,dc=pl"
+# LDAP_OLC_ACCESS            - additional access privileges to '*' e.g., "by anonymous auth by * read"
+##############################################################################
+#
+dn: olcDatabase=meta,cn=config
+objectClass: olcDatabaseConfig
+objectClass: olcMetaConfig
+olcDatabase: meta
+#
+## Naming parameters #########################################################
+olcSuffix: ${LDAP_BASED_OLC_SUFFIX}
+olcRootDN: ${LDAP_BASED_ROOT_DN}
+olcRootPW: ${LDAP_ROOT_PASSWD_ENCRYPTED}
+#
+## Accessibility #############################################################
+#
+# Access to the password attribute for login/change purposes #################
+olcAccess: to attrs=userPassword,sambaNTPassword by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" write by dn.children="ou=Technical,${LDAP_LOCAL_OLC_SUFFIX}" read by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" write by dn.children="ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}" read by self write by anonymous auth by * none
+# Access to the password history attribute ###################################
+olcAccess: to attrs=sambaPasswordHistory,sambaPwdLastSet,shadowLastChange by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" write by dn.children="ou=Technical,${LDAP_LOCAL_OLC_SUFFIX}" read by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" write by dn.children="ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}" read by self auth by self write by * none
+#
+# Access to an attribute with a kerberos key #################################
+olcAccess: to attrs=krbPrincipalKey by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn.exact="uid=kdc-service,${LDAP_LOCAL_OLC_SUFFIX}" read by dn.exact="uid=kadmin-service,${LDAP_LOCAL_OLC_SUFFIX}" write by dn.exact="uid=kdc-service,ou=local,${LDAP_BASED_OLC_SUFFIX}" read by dn.exact="uid=kadmin-service,ou=local,${LDAP_BASED_OLC_SUFFIX}" write by self auth by self write by * none
+#
+# Access to the local kerberos branch via META database ######################
+olcAccess: to dn.subtree="cn=Kerberos,ou=local,${LDAP_BASED_OLC_SUFFIX}" by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn.exact="uid=kdc-service,ou=local,${LDAP_BASED_OLC_SUFFIX}" read by dn.exact="uid=kadmin-service,ou=local,${LDAP_BASED_OLC_SUFFIX}" write by * none
+#
+# Access to "" of META database ##############################################
+# The by * read rule on dn.base="" is safe and is often standard practice. This allows anonymous reading of
+# LDAP server metadata, such as:
+# - namingContexts: Provides information about available databases (e.g., dc=docker,dc=openldap).
+# - supportedLDAPVersion: LDAP protocol versions.
+# - supportedSASLMechanisms: Supported authentication mechanisms.
+# - subschemasubentry: The schema subtree DN, which is crucial for schema management applications.
+# This information does not reveal any user data or its structure. It is only used to allow client applications
+# to "learn" the server and know how to communicate with it and where to look for data.
+olcAccess: to dn.base="" by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by * read
+#
+# Access to the local branch of the organization via META ####################
+olcAccess: to dn.subtree="${LDAP_BASED_OLC_SUFFIX}" by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" manage by users read by * none
+#
+# Other access ###############################################################
+olcAccess: to * by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" manage by self read by self write by self auth ${LDAP_OLC_ACCESS}
+
+##############################################################################
+# Proxy to the local MDB
+# The local MDB will be bound to the branch: ou=local,${LDAP_BASED_OLC_SUFFIX}##############################################################################
+dn: olcMetaSub=local,olcDatabase={3}meta,cn=config
+objectClass: olcMetaTargetConfig
+olcMetaSub: local
+olcDbURI: ldap://localhost/ou=local,${LDAP_BASED_OLC_SUFFIX}
+olcDbIDAssertBind: binddn="${LDAP_LOCAL_ROOT_DN}" bindmethod=simple credentials=${LDAP_ROOT_PASSWD_PLAINTEXT}
+olcDbRebindAsUser: TRUE
+olcDbRewrite: suffixmassage "ou=local,${LDAP_BASED_OLC_SUFFIX}" "${LDAP_LOCAL_OLC_SUFFIX}"
+
+

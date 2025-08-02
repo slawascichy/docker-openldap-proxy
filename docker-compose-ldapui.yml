@@ -1,0 +1,42 @@
+networks:
+  default-network:
+    driver: bridge
+
+volumes:
+  phpldapadmin-certs:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /d/mercury/phpldapadmin/certs
+  ldap-client-certs:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /d/mercury/phpldapadmin/ldap-certs
+
+services:
+  ldap-ui:
+    image: osixia/phpldapadmin:stable
+    build: .
+    hostname: ldap-ui
+    networks:
+      - default-network
+    environment:
+      - PHPLDAPADMIN_LDAP_HOSTS=${PHPLDAPADMIN_LDAP_HOSTS:-openldap-proxy}
+      - PHPLDAPADMIN_HTTPS=${PHPLDAPADMIN_HTTPS:-true}
+      - PHPLDAPADMIN_HTTPS_CRT_FILENAME=${PHPLDAPADMIN_HTTPS_CRT_FILENAME}
+      - PHPLDAPADMIN_HTTPS_KEY_FILENAME=${PHPLDAPADMIN_HTTPS_KEY_FILENAME}
+      - PHPLDAPADMIN_HTTPS_CA_CRT_FILENAME=${PHPLDAPADMIN_HTTPS_CA_CRT_FILENAME}
+      - PHPLDAPADMIN_TRUST_PROXY_SSL=${PHPLDAPADMIN_TRUST_PROXY_SSL:-true}
+      - PHPLDAPADMIN_LDAP_CLIENT_TLS=${PHPLDAPADMIN_LDAP_CLIENT_TLS:-false}
+      - PHPLDAPADMIN_LDAP_CLIENT_TLS_REQCERT=${PHPLDAPADMIN_LDAP_CLIENT_TLS:-never}
+      - PHPLDAPADMIN_LDAP_CLIENT_TLS_CA_CRT_FILENAME=${PHPLDAPADMIN_LDAP_CLIENT_TLS_CA_CRT_FILENAME:-ca.cert}
+      - PHPLDAPADMIN_LDAP_CLIENT_TLS_CRT_FILENAME=${PHPLDAPADMIN_LDAP_CLIENT_TLS_CRT_FILENAME:-cert.crt}
+      - PHPLDAPADMIN_LDAP_CLIENT_TLS_KEY_FILENAME=${PHPLDAPADMIN_LDAP_CLIENT_TLS:-cert.key}
+    volumes: 
+      - phpldapadmin-certs:/container/service/phpldapadmin/assets/apache2/certs:rw
+      - ldap-client-certs:/container/service/ldap-client/assets/certs:rw
+    ports:
+      - "6443:443"

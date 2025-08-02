@@ -1,0 +1,52 @@
+# Sample groups - START
+dn: cn=mrc-admin,ou=Groups,${LDAP_LOCAL_OLC_SUFFIX}
+objectClass: groupOfUniqueNames
+objectClass: top
+cn: mrc-admin
+uniqueMember: uid=mrcmanager,ou=People,${LDAP_LOCAL_OLC_SUFFIX}
+
+dn: cn=mrc-user,ou=Groups,${LDAP_LOCAL_OLC_SUFFIX}
+objectClass: groupOfUniqueNames
+objectClass: top
+cn: mrc-user
+uniqueMember: uid=mrcuser,ou=People,${LDAP_LOCAL_OLC_SUFFIX}
+
+# Sample groups - END
+# Sample users - START
+dn: uid=mrcmanager,ou=People,${LDAP_LOCAL_OLC_SUFFIX}
+objectClass: ADPerson
+objectClass: cszuAttrs
+objectClass: cszuUser
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+allowSystem: ALL
+cn:Sample Manager
+entryDistinguishedName: uid=mrcmanager,ou=People,${LDAP_LOCAL_OLC_SUFFIX}
+primaryGroup: cn=mrc-admin,ou=Groups,${LDAP_LOCAL_OLC_SUFFIX}
+sAMAccountName: mrcmanager
+sn: Manager
+mail: mrcmanager@example.com
+uid: mrcmanager
+userPassword: ${LDAP_ROOT_PASSWD_ENCRYPTED}
+
+dn: uid=mrcuser,ou=People,${LDAP_LOCAL_OLC_SUFFIX}
+objectClass: ADPerson
+objectClass: cszuAttrs
+objectClass: cszuUser
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+allowSystem: ALL
+cn:Sample User
+entryDistinguishedName: uid=mrcuser,ou=People,${LDAP_LOCAL_OLC_SUFFIX}
+primaryGroup: cn=mrc-user,ou=Groups,${LDAP_LOCAL_OLC_SUFFIX}
+sAMAccountName: mrcuser
+sn: User
+mail: mrcuser@example.com
+uid: mrcuser
+userPassword: ${LDAP_ROOT_PASSWD_ENCRYPTED}
+
+# Sample users - END

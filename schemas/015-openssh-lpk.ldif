@@ -1,0 +1,14 @@
+#
+# LDAP Public Key Patch schema for use with openssh-ldappubkey
+#                              useful with PKA-LDAP also
+#
+# Adjusted: Dennis Leeuw <dleeuw@made-it.com>
+#           Making the uid a MUST, but the sshPublicKey a MAY
+#           so we can add the objectClass and later add the key
+#
+dn: cn=openssh-lpk,cn=schema,cn=config
+objectClass: olcSchemaConfig
+cn: openssh-lpk
+#
+olcAttributeTypes: (  1.3.6.1.4.1.24552.500.1.1.1.13 NAME 'sshPublicKey' DESC 'MANDATORY: OpenSSH Public key' EQUALITY octetStringMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 SINGLE-VALUE )
+olcObjectClasses: ( 1.3.6.1.4.1.24552.500.1.1.2.0 NAME 'ldapPublicKey' SUP top AUXILIARY DESC 'MANDATORY: OpenSSH LPK objectclass' MUST ( uid )	MAY ( sshPublicKey ) )

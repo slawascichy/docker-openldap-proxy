@@ -1,0 +1,6 @@
+# add_rwm_guid_rewrite_rule.ldif
+# ldapmodify -Y EXTERNAL -H ldapi:/// -f add_rwm_guid_rewrite_rule.ldif
+dn: olcOverlay={0}rwm,olcDatabase={3}meta,cn=config
+changetype: modify
+add: olcRwmRewrite
+olcRwmRewrite: {1}rwm-rewriteRule "objectGUID: (.+)" "objectGUID::$1" ":@R"

@@ -1,0 +1,25 @@
+# Przykład pliku LDIF z wieloma mapowaniami
+# ldapmodify -Y EXTERNAL -H ldapi:/// -f map_multiple_attributes2.ldif
+# Plik: map_multiple_attributes.ldif
+dn: olcMetaSub={1}pluton,olcDatabase={3}meta,cn=config
+changetype: modify
+# OK --> add: olcDbMap
+# OK --> olcDbMap: attribute sAMAccountName sAMAccountName
+#-
+# OK --> add: olcDbMap
+# OK --> olcDbMap: attribute name name
+#-
+# OK --> add: olcDbMap
+# OK --> olcDbMap: objectclass aDPerson user
+#-
+# OK --> add: olcDbMap
+# OK --> olcDbMap: objectclass groupOfUniqueNames group
+#-
+# OK --> add: olcDbMap
+# OK --> olcDbMap: attribute uniqueMember member
+#-
+# OK --> add: olcDbMap
+# OK --> olcDbMap: attribute objectGUID objectGUID
+#-
+# OK --> add: olcDbMap
+# OK --> olcDbMap: attribute objectSid objectSid

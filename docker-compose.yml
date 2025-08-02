@@ -1,0 +1,57 @@
+networks:
+  default-network:
+    driver: bridge
+
+volumes:
+  openldap:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /d/mercury/openldap-proxy
+  slapd-d:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /d/mercury/slapd.d-proxy
+  ca-certificates:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /d/mercury/openldap-cacerts	  
+  lapd-workspace:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /d/workspace/git/docker-openldap/ldap-proxy/workspace	  
+
+services:
+  openldap-proxy:
+    image: scisoftware/openldap-proxy:ubuntu-24.04
+    hostname: openldap-proxy
+    networks:
+      - default-network
+    environment:
+      - LDAP_ORG_DC=${LDAP_ORG_DC}
+      - LDAP_LOCAL_OLC_SUFFIX=${LDAP_LOCAL_OLC_SUFFIX}
+      - LDAP_BASED_OLC_SUFFIX=${LDAP_BASED_OLC_SUFFIX}
+      - LDAP_ROOT_CN=${LDAP_ROOT_CN}
+      - LDAP_LOCAL_ROOT_DN=cn=${LDAP_ROOT_CN},${LDAP_LOCAL_OLC_SUFFIX}
+      - LDAP_BASED_ROOT_DN=cn=${LDAP_ROOT_CN},${LDAP_BASED_OLC_SUFFIX}
+      - LDAP_ROOT_PASSWD_PLAINTEXT=${LDAP_ROOT_PASSWD_PLAINTEXT}
+      - LDAP_TECHNICAL_USER_CN=${LDAP_TECHNICAL_USER_CN:-FrontendAccount}
+      - LDAP_TECHNICAL_USER_PASSWD=${LDAP_TECHNICAL_USER_PASSWD:-secret}
+      - LDAP_OLC_ACCESS=${LDAP_OLC_ACCESS:-by * read}
+      - LDAP_TLS_CACERT=${LDAP_TLS_CACERT:-IBPMPRO_CA.crt}
+      - SERVER_DEBUG=${SERVER_DEBUG:-32}
+    volumes: 
+      - openldap:/var/lib/ldap:rw
+      - slapd-d:/etc/ldap/slapd.d:rw
+      - ca-certificates:/usr/local/share/ca-certificate:rw
+      - lapd-workspace:/opt/workspace:rw
+    ports:
+      - "389:389"
+      - "636:636"

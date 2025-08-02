@@ -1,0 +1,21 @@
+#
+# Netscape Messaging Server 4.x
+#
+dn: cn=netscapemessagingserver,cn=schema,cn=config
+objectClass: olcSchemaConfig
+cn: netscapemessagingserver
+#
+olcAttributeTypes: ( 2.16.840.1.113730.3.1.23 NAME 'mailAlternateAddress' DESC 'Contains secondary email addresses for the group.' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+olcAttributeTypes: ( 2.16.840.1.113730.3.1.22 NAME 'mailAccessDomain' DESC 'Contains the domain from which the user can access the messaging server.' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+olcAttributeTypes: ( 2.16.840.1.113730.3.1.24 NAME 'mailAutoReplyMode' DESC 'Specifies whether autoreply mode for the account is enabled.' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+olcAttributeTypes: ( 2.16.840.1.113730.3.1.25 NAME 'mailAutoReplyText' DESC 'Contains the text use for automatic reply emails.' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+olcAttributeTypes: ( 2.16.840.1.113730.3.1.26 NAME 'mailDeliveryOption' DESC 'Specifies the mail delivery mechanism to be used for the mail user.' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+olcAttributeTypes: ( 2.16.840.1.113730.3.1.27 NAME 'mailForwardingAddress' DESC 'Specifies the mail delivery mechanism to use for the mail user.' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+olcAttributeTypes: ( 2.16.840.1.113730.3.1.30 NAME 'mailMessageStore' DESC 'Specifies the location of the users mail box.' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+olcAttributeTypes: ( 2.16.840.1.113730.3.1.31 NAME 'mailProgramDeliveryInfo' DESC 'Specifies the commands used for programmed mail delivery.' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+olcAttributeTypes: ( 2.16.840.1.113730.3.1.32 NAME 'mailQuota' DESC 'Specifies the disk space allowed for the users mail box.' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+olcAttributeTypes: ( 2.16.840.1.113730.3.1.33 NAME 'multiLineDescription' DESC 'Contains a text description of the entry which spans more than one line.' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+olcAttributeTypes: ( 2.16.840.1.113730.3.1.43 NAME 'memberMailAddr' DESC 'Adres uczestnika grupy' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+olcObjectClasses: ( 2.16.840.1.113730.3.2.4 NAME 'mailGroup' DESC '' SUP top AUXILIARY MUST ( objectClass $cn $ mail ) MAY ( mailAlternateAddress $ mailHost $ owner $ member $ memberOf $ memberMailAddr) X-ORIGIN 'Netscape Messaging Server 4.x' )
+olcObjectClasses: ( 2.16.840.1.113730.3.2.3 NAME 'mailRecipient' DESC '' SUP top AUXILIARY MUST ( objectClass $ mail ) MAY ( cn $ mailAlternateAddress $ mailHost $ mailRoutingAddress $ mailAccessDomain $ mailAutoReplyMode $ mailAutoReplyText $ mailDeliveryOption $ mailForwardingAddress $ mailMessageStore $ mailProgramDeliveryInfo $ mailQuota $ multiLineDescription $ uid $ userPassword ) X-ORIGIN 'Netscape Messaging Server 4.x' )
+

@@ -1,0 +1,105 @@
+#
+# Author's scheme supporting the Central User Management System 
+# (Centralny System Zarządzania Użytkownikami - CSZU)
+#
+# The schema supports data synchronization between OpenLDAP and IBM BPM. 
+# Additionally, it contains the attribute 'allowSystem', which is used 
+# as an additional filter in integration with sssd (Unix)
+#
+# Value's format in 'allowSystem' attribute is:
+# 	<host_name>;<service_name>;<expiration_date_in_format_YYYYMMDDHH24mm>;<task_ID>
+# Where:
+#  - host_name: name of host
+#  - service_name - name of service
+#  - expiration_date_in_format_YYYYMMDDHH24mm - date of expiration of privilege 
+#  - task_ID - task identifier in the service system
+# Samples:
+#   admin.scisoftware.pl;shell;203512300000;POC-01
+#   admin.scisoftware.pl;IBMBPM;203512300000;POC-01
+# Sample of using the 'allowSystem' attribute as additional user's filter (sssd configuration):
+# LDAP_ACCESS_FILTER=(&(objectclass=shadowaccount)(objectclass=posixaccount)(allowSystem=admin.scisoftware.pl;shell;*))
+#
+#
+#	Created by: Sławomir Cichy (slawas@slawas.pl)
+#   Copyright 2014-2024 SciSoftwere Sławomir Cichy Inc.
+#
+
+attributetype ( 1.3.6.1.4.1.2021.3.1.4
+    NAME 'primaryGroup'
+    SUP distinguishedName )
+
+attributetype ( 1.3.6.1.4.1.2021.3.1.5
+    NAME 'primaryGroupName'
+    EQUALITY caseIgnoreMatch
+    SYNTAX '1.3.6.1.4.1.1466.115.121.1.15'
+    SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.2021.3.1.6
+    NAME 'departmentCode'
+    EQUALITY caseIgnoreMatch
+    SYNTAX '1.3.6.1.4.1.1466.115.121.1.15'
+    SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.2021.3.1.7
+    NAME 'isChief'
+    EQUALITY booleanMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.2021.3.1.9
+    NAME 'isActive'
+    EQUALITY booleanMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.2021.3.1.8
+    NAME 'hrNumber'
+    DESC 'RFC2307: An integer uniquely identifying ih HR System'
+    EQUALITY integerMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.2021.3.0.2
+    NAME 'allowSystem'
+    EQUALITY caseIgnoreMatch 
+	SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX '1.3.6.1.4.1.1466.115.121.1.15')
+
+attributetype ( 1.3.6.1.4.1.2021.3.0.3
+    NAME 'entryDistinguishedName'
+    SUP distinguishedName )
+
+attributetype ( 1.3.6.1.4.1.2021.3.2.4
+    NAME 'managerGroup'
+    SUP distinguishedName )
+
+attributetype ( 1.3.6.1.4.1.2021.3.2.3
+    NAME 'managerGroupName'
+    EQUALITY caseIgnoreMatch
+    SYNTAX '1.3.6.1.4.1.1466.115.121.1.15'
+    SINGLE-VALUE )
+
+objectclass ( 1.3.6.1.4.1.2021.3.0.1
+    NAME 'cszuAttrs'
+    DESC 'Attributes used by CSZU' AUXILIARY
+    MUST ( allowSystem $ entryDistinguishedName ))
+
+objectclass ( 1.3.6.1.4.1.2021.3.0.2
+    NAME 'cszuPrivs'
+    DESC 'Granted access to systems' AUXILIARY
+    MUST ( allowSystem $ entryDistinguishedName ))
+
+objectclass ( 1.3.6.1.4.1.2021.3.1.1
+    NAME 'cszuUser'
+    DESC 'Attributes used by CSZU for user entries'
+    SUP cszuAttrs AUXILIARY
+    MUST ( primaryGroup )
+    MAY ( primaryGroupName $ departmentCode $ isChief $ isActive $ hrNumber $ allowSystem $ entryDistinguishedName) )
+
+objectclass ( 1.3.6.1.4.1.2021.3.2.1
+    NAME 'cszuGroup'
+    DESC 'Attributes used by CSZU for group entries'
+    SUP cszuAttrs AUXILIARY
+    MUST ( cn $ managerGroup )
+    MAY ( mail $
+    NAME $ displayName $ description $ manager $ member $ memberOf))

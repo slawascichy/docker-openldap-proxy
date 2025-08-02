@@ -1,0 +1,111 @@
+##############################################################################
+# 06-add-all-dbmap-for-ad-proxy.ldif
+#
+# Mapping attribute' names from external AD to local OpenLDAP
+# Finally, the attributes are visible as for the OpenLDAP definition
+# olcDbMap: attribute <attribute_name_as_seen_by_the_OpenLDAP_client> <attribute_name_in_remote_source_(AD)>
+##############################################################################
+#
+dn: olcMetaSub=${META_SUB},olcDatabase={3}meta,cn=config
+changetype: modify
+add: olcDbMap
+olcDbMap: attribute uid userPrincipalName
+-
+add: olcDbMap
+olcDbMap: attribute entryDistinguishedName distinguishedName
+-
+add: olcDbMap
+olcDbMap: attribute cn cn
+-
+add: olcDbMap
+olcDbMap: attribute givenName givenName
+-
+add: olcDbMap
+olcDbMap: attribute sn sn
+-
+add: olcDbMap
+olcDbMap: attribute displayName displayName
+-
+add: olcDbMap
+olcDbMap: attribute mail mail
+-
+add: olcDbMap
+olcDbMap: attribute telephoneNumber telephoneNumber
+-
+add: olcDbMap
+olcDbMap: attribute mobile mobile
+-
+add: olcDbMap
+olcDbMap: attribute description description
+-
+add: olcDbMap
+olcDbMap: attribute physicalDeliveryOfficeName physicalDeliveryOfficeName
+-
+add: olcDbMap
+olcDbMap: attribute title title
+-
+add: olcDbMap
+olcDbMap: attribute company company
+-
+add: olcDbMap
+olcDbMap: attribute memberOf memberOf
+-
+add: olcDbMap
+olcDbMap: attribute gidNumber primaryGroupID
+-
+add: olcDbMap
+olcDbMap: attribute shadowExpire accountExpires
+-
+add: olcDbMap
+olcDbMap: attribute shadowLastChange pwdLastSet
+-
+add: olcDbMap
+olcDbMap: attribute sAMAccountName sAMAccountName
+-
+add: olcDbMap
+olcDbMap: attribute name name
+-
+add: olcDbMap
+olcDbMap: attribute jpegPhoto thumbnailPhoto
+-
+add: olcDbMap
+olcDbMap: attribute preferredLanguage preferredLanguage
+-
+add: olcDbMap
+olcDbMap: attribute generationQualifier generationQualifier
+-
+add: olcDbMap
+olcDbMap: attribute personalTitle personalTitle
+-
+add: olcDbMap
+olcDbMap: attribute employeeID employeeID
+-
+add: olcDbMap
+olcDbMap: attribute l l
+-
+add: olcDbMap
+olcDbMap: attribute c c
+-
+add: olcDbMap
+olcDbMap: attribute department department
+-
+add: olcDbMap
+olcDbMap: attribute streetAddress streetAddress
+-
+add: olcDbMap
+olcDbMap: attribute objectGUID objectGUID
+-
+add: olcDbMap
+olcDbMap: attribute objectSid objectSid
+-
+add: olcDbMap
+olcDbMap: attribute uniqueMember member
+-
+add: olcDbMap
+olcDbMap: objectclass aDPerson user
+-
+add: olcDbMap
+olcDbMap: objectclass groupOfUniqueNames group
+#-
+#add: olcDbMap
+#olcDbMap: attribute *

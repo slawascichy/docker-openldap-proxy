@@ -1,0 +1,9 @@
+##############################################################################
+# Deleting entry from LDAP database
+#
+# Required parameters:
+# --------------------
+# DN_OF_ENTRY_FOR_DELETE - DN of entry for deleting, e.g. "olcMetaSub=pluton,olcDatabase={3}meta,cn=config" 
+##############################################################################
+dn: ${DN_OF_ENTRY_FOR_DELETE}
+changetype: delete

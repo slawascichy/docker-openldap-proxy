@@ -1,0 +1,6 @@
+# add_rwm_overlay.ldif
+# ldapadd -Y EXTERNAL -H ldapi:/// -f add_rwm_overlay.ldif
+dn: olcOverlay={0}rwm,olcDatabase={3}meta,cn=config
+objectClass: olcOverlayConfig
+objectClass: olcRwmConfig
+olcOverlay: {0}rwm

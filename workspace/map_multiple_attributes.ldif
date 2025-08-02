@@ -1,0 +1,12 @@
+# Przykład pliku LDIF z wieloma mapowaniami
+# Plik: map_multiple_attributes.ldif
+dn: olcMetaSub={1}ibpm,olcDatabase={3}meta,cn=config
+changetype: modify
+add: olcDbMap
+olcDbMap: attribute uid sAMAccountName
+-
+add: olcDbMap
+olcDbMap: attribute mail emailAddress
+-
+add: olcDbMap
+olcDbMap: objectclass groupOfNames group

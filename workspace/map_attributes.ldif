@@ -1,0 +1,6 @@
+# Przykład pliku LDIF do modyfikacji
+# Plik: map_attributes.ldif
+dn: olcMetaSub={1}ibpm,olcDatabase={3}meta,cn=config
+changetype: modify
+add: olcDbMap
+olcDbMap: attribute uid sAMAccountName

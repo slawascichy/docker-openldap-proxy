@@ -1,0 +1,165 @@
+##############################################################################
+# OpenLDAP with Proxy
+# https://docs.microfocus.com/doc/425/9.80/configureldapproxy
+# https://serverfault.com/questions/866542/openldap-meta-backend-olc-configuration
+#
+# Mapowanie OpenLDAP Online Configuration Reference (na atrybuty olc)
+# https://tylersguides.com/guides/openldap-online-configuration-reference/
+#
+##############################################################################
+
+# Budowanie kontenera
+docker build -f Dockerfile -t scisoftware/openldap-proxy:ubuntu-0.1 .
+# sudo su - 
+docker build -f Dockerfile -t scisoftware/openldap-proxy:ubuntu-24.04 .
+
+# Uruchomienie kontenera bez kompozycji
+docker run --name openldap-proxy -p 389:389 -p 636:636 ^
+ --env LDAP_ORG_DC="docker" ^
+ --env LDAP_LOCAL_OLC_SUFFIX=dc=docker,dc=openldap ^
+ --env LDAP_BASED_OLC_SUFFIX=dc=scisoftware,dc=pl ^
+ --env LDAP_ROOT_CN=manager ^
+ --env LDAP_LOCAL_ROOT_DN=cn=manager,dc=docker,dc=openldap ^
+ --env LDAP_BASED_ROOT_DN=cn=manager,dc=scisoftware,dc=pl ^
+ --env LDAP_ROOT_PASSWD_PLAINTEXT=secret ^
+ --env SERVER_DEBUG=-1 ^
+ --env LDAP_OLC_ACCESS="by anonymous auth by * none" ^
+ --volume slapd_proxy_database:/var/lib/openldap ^
+ --volume slapd_proxy_config:/etc/openldap/slapd.d ^
+ --detach scisoftware/openldap-proxy:ubuntu-24.04
+
+# Uruchomienie kompozycji podstawowej (tylko kontener openldap)
+docker compose -f docker-compose.yml --env-file ldap-conf.env up
+
+# Uruchomienie kompozycji z UI
+docker compose -f docker-compose-with-ui.yml --env-file ldap-conf.env up -d
+
+
+##############################################################################
+# Publikowanie obrazów
+# Dokumentacja poleca by bazować na działającym kontenerze - w sumie masz wtedy pewność, że obraz działa
+# -----------------------
+# OpenLDAP
+# -----------------------
+# 1. Robimy tag obrazu z kontenera
+docker container ls
+docker container commit f701caa667f1 openldap-proxy:latest
+#                 gdzie f701caa667f1 to identyfikator działającego kontenera
+# 2. Tworzymy docelowy tag obrazu (przykład)
+docker image tag openldap-proxy:latest scisoftware/openldap-proxy:latest
+docker image tag openldap-proxy:latest scisoftware/openldap-proxy:ubuntu-24.04
+# gdzie ubuntu-24.04 to obecna wersja obrazu
+# 3. wysyłamy w świat
+docker image push -a scisoftware/openldap-proxy
+
+##############################################################################
+# Skrypt do tworzenia metabazy z proxy do LDAP zewnętrznego
+# Testowanie konfiguracji połączenia 
+./add-proxy-to-external-ldap.sh \
+  BIND_LDAP_URI=ldap://pluton.hgdb.org \
+  BIND_DN=CN=Administrator,CN=Users,DC=BOJANO,DC=LOCAL \
+  BIND_PASSWD_PLAINTEXT=secret \
+  BIND_BASE_CTX_SEARCH=CN=Users,DC=BOJANO,DC=LOCAL \
+  LDAP_PROXY_OU_NAME=pluton --addADAttributesMapping \
+  --test
+  
+# Dodanie metabazy konfiguracji połączenia
+./add-proxy-to-external-ldap.sh \
+  BIND_LDAP_URI=ldap://pluton.hgdb.org \
+  BIND_DN=CN=Administrator,CN=Users,DC=BOJANO,DC=LOCAL \
+  BIND_PASSWD_PLAINTEXT=secret \
+  BIND_BASE_CTX_SEARCH=CN=Users,DC=BOJANO,DC=LOCAL \
+  LDAP_PROXY_OU_NAME=pluton --addADAttributesMapping 
+
+##############################################################################
+# Szyfrowanie hasła użytkownika w LDAP
+#
+[root]# slappasswd
+New password : uTkyhUvPpw
+Re-enter new password : uTkyhUvPpw
+{SSHA}Oue7OzckGcTMlSk9/qQPzpO7zExHkJ/e
+
+
+##############################################################################
+# Weryfikacja pobierania swoich danych przez użytkownika
+#
+ldapsearch -x -D "uid=slawas,ou=People,dc=docker,dc=openldap" -W -b "uid=slawas,ou=People,dc=docker,dc=openldap" "(objectClass=*)"
+ldapsearch -x -D "uid=slawas,ou=People,ou=local,dc=scisoftware,dc=pl" -W -b "uid=slawas,ou=People,ou=local,dc=scisoftware,dc=pl" "(objectClass=*)"
+ldapsearch -x -D "uid=ldapui,ou=Admins,ou=local,dc=scisoftware,dc=pl" -w secret -b "ou=ibpm.pro,dc=scisoftware,dc=pl" -s sub "(objectClass=*)" dn
+
+##############################################################################
+# Pobieranie definicji reguł uprawnień
+#
+ldapsearch -Y EXTERNAL -H ldapi:/// -b "olcDatabase={2}mdb,cn=config" olcAccess
+ldapsearch -Y EXTERNAL -H ldapi:/// -b "olcDatabase={3}meta,cn=config" olcAccess
+
+##############################################################################
+# Dekodowanie danych w base64
+#
+echo -ne 'ezB9dG8gYXR0cnM9c2FtYmFQYXNzd29yZEhpc3Rvcnksc2FtYmFQd2RMYXN0U2V0LHVzZXJQYXNzd29yZCxzYW1iYU5UUGFzc3dvcmQgIGJ5IGRuLmV4YWN0PSJnaWROdW1iZXI9MCt1aWROdW1iZXI9MCxjbj1wZWVyY3JlZCxjbj1leHRlcm5hbCxjbj1hdXRoIiBtYW5hZ2Ug' | base64 -d
+
+##############################################################################
+# Wyszukiwanie do weryfikacji poprawności działania bazy danych
+#
+ldapsearch -W -H ldapi:/// -b "dc=example,dc=com" -s sub -x "(objectclass=*)"
+ldapsearch -W -H ldapi:/// -b "ou=pluton,dc=example,dc=com" -s sub -x "(objectclass=*)"
+ldapsearch -x -H ldap://pluton.hgdb.org -b "CN=Users,DC=BOJANO,DC=LOCAL" -D "CN=Administrator,CN=Users,DC=BOJANO,DC=LOCAL" -w OnIbSlmz#3001
+ldapsearch -x -D "cn=manager,DC=admin,DC=com" -w uTkyhUvPpw -b "dc=example,dc=com" -H ldap://localhost
+ldapsearch -x -D "cn=manager,dc=example,dc=com" -w uTkyhUvPpw -b "dc=example,dc=com" -H ldap://localhost
+ldapsearch -x -LLL -H ldap://pluton.hgdb.org -D "CN=Administrator,CN=Users,DC=BOJANO,DC=LOCAL" -w OnIbSlmz#3001 -b"CN=Users,DC=BOJANO,DC=LOCAL" -s sub "(objectClass=*)" cn
+
+ldapmodify -Y EXTERNAL -H ldapi:/// -f modify_mdb_acl_6.ldif
+
+
+##############################################################################
+# Przykłady konfiguracji metabaz danych
+#
+dn: olcMetaSub=pluton,olcDatabase={3}meta,cn=config
+objectClass: olcMetaTargetConfig
+olcMetaSub: pluton
+olcDbURI: ldap://pluton.hgdb.org/ou=pluton,dc=scisoftware,dc=pl
+olcDbIDAssertBind: binddn="CN=Administrator,CN=Users,DC=BOJANO,DC=LOCAL" bindmethod=simple credentials=secret
+olcDbRebindAsUser: TRUE
+olcDbRewrite: suffixmassage "ou=pluton,dc=scisoftware,dc=pl" "CN=Users,DC=BOJANO,DC=LOCAL"
+
+dn: olcMetaSub=groups,olcDatabase={3}meta,cn=config
+objectClass: olcMetaTargetConfig
+olcMetaSub: groups
+olcDbURI: ldap://pluton.hgdb.org/ou=groups,dc=example,dc=com
+olcDbIDAssertBind: binddn="CN=Administrator,CN=Users,DC=BOJANO,DC=LOCAL" bindmethod=simple credentials=secret
+olcDbRebindAsUser: TRUE
+olcDbRewrite: suffixmassage "ou=groups,dc=example,dc=com" "OU=Groups,DC=BOJANO,DC=LOCAL"
+
+dn: olcMetaSub=users,olcDatabase={3}meta,cn=config
+objectClass: olcMetaTargetConfig
+olcMetaSub: users
+olcDbURI: ldap://pluton.hgdb.org/ou=Users,dc=scisoftware,dc=pl
+olcDbIDAssertBind: binddn="CN=Administrator,CN=Users,DC=BOJANO,DC=LOCAL" bindmethod=simple credentials=secret
+olcDbRebindAsUser: TRUE
+olcDbRewrite: suffixmassage "ou=Users,dc=scisoftware,dc=pl" "CN=Users,DC=BOJANO,DC=LOCAL"
+
+
+##############################################################################
+# Przykłady entry użytkownika 'slawas'
+#
+dn: uid=slawas,ou=People,dc=docker,dc=openldap
+objectClass: aDPerson
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: posixAccount
+objectClass: top
+cn: Sławomir Cichy
+gidNumber: 1001
+homeDirectory: /opt/ibpmusers/slawas
+sAMAccountName: slawas
+sn: Cichy
+uid: slawas
+uidNumber: 1001
+loginShell: /bin/bash
+userPassword:: e1NTSEF9Wmg3bW9FQm1qbnBtZ1hEL0VMNUdHdW03VFhXODBJc3U=
+
+##############################################################################
+# Opracowanie GUI
+
+

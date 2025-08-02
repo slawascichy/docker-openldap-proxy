@@ -1,0 +1,16 @@
+dn: uid=slawas,ou=People,${LDAP_LOCAL_OLC_SUFFIX}
+objectClass: aDPerson
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: posixAccount
+objectClass: top
+cn: Sławomir Cichy
+gidNumber: 1001
+homeDirectory: /opt/ibpmusers/slawas
+sAMAccountName: slawas
+sn: Cichy
+uid: slawas
+uidNumber: 1001
+loginShell: /bin/bash
+userPassword:: e1NTSEF9Wmg3bW9FQm1qbnBtZ1hEL0VMNUdHdW03VFhXODBJc3U=

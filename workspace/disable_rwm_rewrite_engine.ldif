@@ -1,0 +1,6 @@
+# enable_rwm_rewrite_engine.ldif
+# ldapmodify -Y EXTERNAL -H ldapi:/// -f disable_rwm_rewrite_engine.ldif
+dn: olcOverlay={0}rwm,olcDatabase={3}meta,cn=config
+changetype: modify
+replace: olcRwmRewrite
+olcRwmRewrite: {0}rwm-rewriteEngine "off"
