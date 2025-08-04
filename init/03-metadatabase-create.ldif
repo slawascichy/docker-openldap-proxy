@@ -18,6 +18,19 @@
 # LDAP_OLC_ACCESS            - additional access privileges to '*' e.g., "by anonymous auth by * read"
 ##############################################################################
 #
+# Subordinate persisted database #############################################
+#
+dn: olcDatabase=mdb,cn=config
+objectClass: olcDatabaseConfig
+objectClass: olcMdbConfig
+olcDatabase: mdb
+olcDbDirectory: ${LDAP_DB_DIR}/subordinate
+olcSuffix: dc=subordinate,${LDAP_BASED_OLC_SUFFIX}
+olcSubordinate: TRUE
+
+#
+# Proper meta database #######################################################
+#
 dn: olcDatabase=meta,cn=config
 objectClass: olcDatabaseConfig
 objectClass: olcMetaConfig
@@ -27,6 +40,9 @@ olcDatabase: meta
 olcSuffix: ${LDAP_BASED_OLC_SUFFIX}
 olcRootDN: ${LDAP_BASED_ROOT_DN}
 olcRootPW: ${LDAP_ROOT_PASSWD_ENCRYPTED}
+olcDbOnErr: continue
+olcDbCancel: abandon
+olcDbTFSupport: no
 #
 ## Accessibility #############################################################
 #
@@ -53,7 +69,7 @@ olcAccess: to dn.subtree="cn=Kerberos,ou=local,${LDAP_BASED_OLC_SUFFIX}" by dn.e
 olcAccess: to dn.base="" by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by * read
 #
 # Access to the local branch of the organization via META ####################
-olcAccess: to dn.subtree="${LDAP_BASED_OLC_SUFFIX}" by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" manage by users read by * none
+olcAccess: to dn.subtree="${LDAP_BASED_OLC_SUFFIX}" by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" manage by * read
 #
 # Other access ###############################################################
 olcAccess: to * by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" manage by self read by self write by self auth ${LDAP_OLC_ACCESS}
@@ -61,12 +77,10 @@ olcAccess: to * by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=a
 ##############################################################################
 # Proxy to the local MDB
 # The local MDB will be bound to the branch: ou=local,${LDAP_BASED_OLC_SUFFIX}##############################################################################
-dn: olcMetaSub=local,olcDatabase={3}meta,cn=config
+dn: olcMetaSub=local,olcDatabase={4}meta,cn=config
 objectClass: olcMetaTargetConfig
 olcMetaSub: local
 olcDbURI: ldap://localhost/ou=local,${LDAP_BASED_OLC_SUFFIX}
 olcDbIDAssertBind: binddn="${LDAP_LOCAL_ROOT_DN}" bindmethod=simple credentials=${LDAP_ROOT_PASSWD_PLAINTEXT}
 olcDbRebindAsUser: TRUE
 olcDbRewrite: suffixmassage "ou=local,${LDAP_BASED_OLC_SUFFIX}" "${LDAP_LOCAL_OLC_SUFFIX}"
-
-
