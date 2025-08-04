@@ -625,7 +625,9 @@ If you encounter errors or unexpected behavior, the following tips will help dia
   * Edit the `wimconfig.xml` file located in the deployment environment's configuration directory, for example, using the `vim` application with the command `vim /opt/IBM/BAW/20.0.0.1/profiles/DmgrProfile/config/cells/PCCell1/wim/config/wimconfig.xml`:
     * Find and **replace** `<config:baseEntries name="ou=pluton,dc=scisoftware,dc=pl" nameInRepository="ou=pluton,dc=scisoftware,dc=pl"/>` with `<config:baseEntries name="dc=scisoftware,dc=pl" nameInRepository="dc=scisoftware,dc=pl"/>`
     * Find and **replace** `<config:participatingBaseEntries name="ou=pluton,dc=scisoftware,dc=pl"/>` to `<config:participatingBaseEntries name="ou=pluton,dc=scisoftware,dc=pl"/>`
-  * **Start** the WebSphere server environment. After starting, in the WebSphere console, we can verify whether users from individual connected repositories are visible:
+  * **Start** the WebSphere server environment. 
+  
+After starting, we can verify in the WebSphere console whether users from each connected repository are visible. Go to **Users and Groups > Manage Users** and using the serach form we can test searching user data:
 
 *User `scichy` found in the remote **OpenLDAP*** database:
 ![Successful search for user from local database](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/websphere_ibpm_proxy_to_repository_openldap.png)

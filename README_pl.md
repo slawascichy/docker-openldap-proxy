@@ -634,7 +634,9 @@ Jeśli napotkasz błędy lub nieoczekiwane zachowanie, poniższe wskazówki pomo
   * Edytuj plik `wimconfig.xml` znajdujący się w katalogu konfiguracyjnym środowiska wdrażania przykładowo używając do tego aplikacji `vim` poleceniem  `vim /opt/IBM/BAW/20.0.0.1/profiles/DmgrProfile/config/cells/PCCell1/wim/config/wimconfig.xml`:
     * Znajdź i **zamień** `<config:baseEntries name="ou=pluton,dc=scisoftware,dc=pl" nameInRepository="ou=pluton,dc=scisoftware,dc=pl"/>` na `<config:baseEntries name="dc=scisoftware,dc=pl" nameInRepository="dc=scisoftware,dc=pl"/>`
     * Znajdź i **zamień** `<config:participatingBaseEntries name="ou=pluton,dc=scisoftware,dc=pl"/>` na `<config:participatingBaseEntries name="ou=pluton,dc=scisoftware,dc=pl"/>`
-  * **Wystartuj** środowisko serwerów WebSphere. Po wystartowaniu w konsoli WWebSphere możemy zweryfikować, czy widoczni są użytkownicy z poszczególnych podłączonych repozytoriów:
+  * **Wystartuj** środowisko serwerów WebSphere. 
+  
+Po wystartowaniu w konsoli WebSphere możemy zweryfikować, czy widoczni są użytkownicy z poszczególnych podłączonych repozytoriów. Przechodzimy do **Users and Groups > Manage Users** i za pomocą formularza wyszukiwania testujemy wyszukiwanie danych użytkowników:
 
 *Znaleziony użytkownik `scichy` w zdalnej bazie danych **OpenLDAP***:
 ![Sukces szukania użytkownika z lokalnej bazy danych](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/websphere_ibpm_proxy_to_repository_openldap.png)
