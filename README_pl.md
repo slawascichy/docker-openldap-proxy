@@ -1,14 +1,10 @@
 # OpenLDAP Proxy
 
-Niniejszy dokument stanowi kompleksowy przewodnik po konfiguracji i utrzymaniu serwera OpenLDAP działającego w trybie proxy (back-meta), integrującego się z usługami katalogowymi Active Directory, lokalną bazą `mdb` oraz innymi źródłami LDAP.
-
----
+Niniejszy dokument stanowi kompleksowy przewodnik po konfiguracji i utrzymaniu serwera OpenLDAP działającego w trybie proxy (`back-meta`), integrującego się z usługami katalogowymi Active Directory, lokalną bazą `mdb` oraz innymi źródłami LDAP. Idea nie jest nowa, została opisana między innymi w artykule [Use LDAP Proxy to integrate multiple LDAP servers](https://docs.microfocus.com/doc/425/9.80/configureldapproxy). Na tego artykułu podstawie oraz innych źródeł zrealizowano podstawowy zakres funkcjonalny obrazu. 
 
 ## O OpenLDAP
 
 Oprogramowanie OpenLDAP to pakiet oprogramowania katalogowego o otwartym kodzie źródłowym, opracowany przez społeczność internetową, stanowiący implementację protokołu LDAP (Lightweight Directory Access Protocol). Więcej informacji na temat tego produktu można znaleźć na stronie [https://www.openldap.org/](https://www.openldap.org/).
-
----
 
 ## 1. Przegląd rozwiązania i architektura
 
@@ -26,8 +22,6 @@ Projekt serwera OpenLDAP w trybie proxy ma na celu unifikację dostępu do róż
 * **System operacyjny kontenera:** ubuntu:latest `org.opencontainers.image.version=24.04`
 * **Kontrolery domeny AD:** Windows Server 2016
 * **Narzędzia:** [Apache Directory Studio](https://directory.apache.org/studio/), `ldapsearch`, `ldapadd`, `ldapmodify`, `ping`, `telnet`
-
----
 
 ## 2. Uruchomienie serwera OpenLDAP Proxy
 
@@ -360,8 +354,6 @@ Podczas pierwszego uruchomienia usługi zawartość lokalnej bazy danych jest in
 
 ![Przykład predefiniowanego drzewa lokalnej bazy danych](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/sample-predefined-tree-by-apache-dir-studio.png)
 
----
-
 ## 3. Mapowanie atrybutów i klas obiektów (`olcDbMap`)
 
 Mapowanie atrybutów odbywa się za pomocą atrybutu `olcDbMap` w konfiguracji każdej podbazy `olcMetaSub`.
@@ -449,8 +441,6 @@ Mapowanie atrybutów między OpenLDAP a Active Directory ma na celu normalizacj�
 
 Atrybuty `objectGUID` i `objectSid` są atrybutami binarnymi specyficznymi dla Active Directory. Na razie nie udało się rozwiązać problemu prawidłowego mapowania pola `objectGUID` (AD) do `entryUIID` (OpenLDAP). Otworzyłem wątek [objectGUID to entryUUID mapping in Openldap proxy with AD](https://serverfault.com/questions/1190133/objectguid-to-entryuuid-mapping-in-openldap-proxy-with-ad) - zobaczymy może komuś uda się rozwiązać problem. 
 
----
-
 ## 4. Uwierzytelnianie i autoryzacja
 
 ### 4.1. ACL (Access Control Lists) - `olcAccess`
@@ -535,47 +525,60 @@ OpenLDAP proxy obsługuje różne metody uwierzytelniania:
 - **Simple Bind**: Uwierzytelnianie za pomocą nazwy użytkownika (DN) i hasła. Używane w testach i wielu aplikacjach.
 - *(Opcjonalnie: GSSAPI/Kerberos, DIGEST-MD5, jeśli skonfigurowane.)*
 
----
-
 ## 5. Monitorowanie i rozwiązywanie problemów
 
 ### 5.1. Logi OpenLDAP
+
 * **Lokalizacja:** Logi `slapd` są zazwyczaj dostępne poprzez `journalctl -u slapd -f` (na systemach z systemd) lub w plikach systemowych (np. `/var/log/syslog`, `/var/log/daemon.log`).
 * **Poziomy logowania (`olcLogLevel`):**
-    * `none`: Brak logów (niezalecane).
-    * `stats`: Podstawowe statystyki (zalecane na produkcji).
-    * `acl`: Logowanie decyzji ACL (przydatne do debugowania uprawnień).
-    * `args`: Argumenty funkcji LDAP.
-    * `conn`: Otwieranie/zamykanie połączeń.
-    * `any` (`65535`): Wszystko (tylko do głębokiej diagnostyki, bardzo "gadatliwe").
+  * `none`: Brak logów (niezalecane).
+  * `stats`: Podstawowe statystyki (zalecane na produkcji).
+  * `acl`: Logowanie decyzji ACL (przydatne do debugowania uprawnień).
+  * `args`: Argumenty funkcji LDAP.
+  * `conn`: Otwieranie/zamykanie połączeń.
+  * `any` (`65535`): Wszystko (tylko do głębokiej diagnostyki, bardzo "gadatliwe").
 
 ### 5.2. Typowe problemy i rozwiązania
+
 * **"Invalid GUID" w Apache Directory Studio:** Problem wizualny specyficzny dla Studio, gdy łączy się przez proxy. Wartość jest poprawna w `ldapsearch`. Rozwiązanie: Załadowanie schematów AD (`microsoftad.ldif`) oraz próba reguł `rwm-rewriteRule` (choć to drugie nie zawsze pomagało dla Studio).
 * **Błędy autoryzacji:** Sprawdź `olcAccess` w `cn=config` i logi `slapd` (`olcLogLevel: acl`).
 * **Problemy z połączeniem do backendu:** Sprawdź `olcDbURI`, `olcDbBindDN`, `olcDbBindPW` w konfiguracji `olcMetaSub` oraz dostępność serwera docelowego (firewall, sieć).
 
 ### 5.3. Narzędzia diagnostyczne
+
 * `ldapsearch`: Do wykonywania zapytań i weryfikacji danych.
 * `ldapmodify`, `ldapadd`, `ldapdelete`: Do modyfikacji konfiguracji i danych.
 
 ### 5.4. Procedury restartu/przeładowania
-* **Restart usługi slapd:** `systemctl restart slapd` (zalecane po dużych zmianach konfiguracyjnych).
 
----
+* **Restart usługi slapd:** `systemctl restart slapd` (zalecane po dużych zmianach konfiguracyjnych).
 
 ## 6. Kopia zapasowa i odtwarzanie
 
 ### 6.1. Procedury backupu
+
 * **Konfiguracja `cn=config`:**
-    ```bash
-    mkdir -p /var/backups/openldap_config_$(date +%Y%m%d%H%M%S)
-    ldapsearch -x -H ldapi:/// -b "cn=config" -LLL > /var/backups/openldap_config_$(date +%Y%m%d%H%M%S)/cn_config_backup.ldif
-    ```
-* **Lokalna baza MDB (jeśli używasz):**
-    ```bash
-    /usr/sbin/slapcat -l /var/backups/openldap_mdb_$(date +%Y%m%d%H%M%S)/mdb_backup.ldif -b "dc=scisoftware,dc=pl"
-    ```
-    *(Dostosuj bazę DN do swojej konfiguracji MDB.)*
+
+```bash
+mkdir -p /var/backups/openldap_config_$(date +%Y%m%d%H%M%S)
+ldapsearch -x -H ldapi:/// -b "cn=config" -LLL > /var/backups/openldap_config_$(date +%Y%m%d%H%M%S)/cn_config_backup.ldif
+```
+
+* **Lokalna baza `mdb` (jeśli używasz):**
+
+```bash
+/usr/sbin/slapcat -l /var/backups/openldap_mdb_$(date +%Y%m%d%H%M%S)/mdb_backup.ldif -b "dc=scisoftware,dc=pl"
+```
+*(Dostosuj bazę DN do swojej konfiguracji `mdb`.)*
 
 ### 6.2. Procedury odtwarzania
+
 *(W razie potrzeby, opis kroków odtwarzania z plików LDIF, np. `slapadd` dla bazy MDB, `ldapadd` dla `cn=config` po świeżej instalacji.)*
+
+## Źródła
+
+* [Use LDAP Proxy to integrate multiple LDAP servers](https://docs.microfocus.com/doc/425/9.80/configureldapproxy)
+* [OpenLDAP meta backend OLC configuration](https://serverfault.com/questions/866542/openldap-meta-backend-olc-configuration)
+* [Mapowanie OpenLDAP Online Configuration Reference](https://tylersguides.com/guides/openldap-online-configuration-reference/)
+* [Combining OpenLDAP and Active Directory via OpenLDAP meta backend](https://serverfault.com/questions/1152227/combining-openldap-and-active-directory-via-openldap-meta-backend/1190129?noredirect=1#comment1542537_1190129)
+* Odpowiedzi dostarczone przez Gemini (Google), 2025

@@ -1,47 +1,41 @@
 # OpenLDAP Proxy
 
-Niniejszy dokument stanowi kompleksowy przewodnik po konfiguracji i utrzymaniu serwera OpenLDAP działającego w trybie proxy (back-meta), integrującego się z usługami katalogowymi Active Directory, lokalną bazą `mdb` oraz innymi źródłami LDAP.
+This document provides a comprehensive guide to configuring and maintaining an OpenLDAP server running in proxy (`back-meta`) mode, integrating with Active Directory, the local `mdb` database, and other LDAP sources. The idea is not new; it's described, among others, in the article [Use LDAP Proxy to integrate multiple LDAP servers](https://docs.microfocus.com/doc/425/9.80/configureldapproxy). This article and other sources served as the basis for implementing the basic functionality of the image.
 
----
+## About OpenLDAP
 
-## O OpenLDAP
+OpenLDAP is an open-source, community-developed directory software package that implements the Lightweight Directory Access Protocol (LDAP). More information about this product can be found at [https://www.openldap.org/](https://www.openldap.org/).
 
-Oprogramowanie OpenLDAP to pakiet oprogramowania katalogowego o otwartym kodzie źródłowym, opracowany przez społeczność internetową, stanowiący implementację protokołu LDAP (Lightweight Directory Access Protocol). Więcej informacji na temat tego produktu można znaleźć na stronie [https://www.openldap.org/](https://www.openldap.org/).
+## 1. Solution Overview and Architecture
 
----
+### 1.1. Project goal
 
-## 1. Przegląd rozwiązania i architektura
+The OpenLDAP proxy server design aims to unify access to various LDAP data sources (such as Active Directory, a local MDB, or other LDAP-S servers) for client applications. This allows for centralized authentication and authorization and presents a consistent view of the directory, regardless of its internal structure.
 
-### 1.1. Cel projektu
+### 1.2. Architecture diagram
 
-Projekt serwera OpenLDAP w trybie proxy ma na celu unifikację dostępu do różnych źródeł danych LDAP (takich jak Active Directory, lokalna baza MDB, inne serwery LDAP-S) dla aplikacji klienckich. Pozwala to na centralizację uwierzytelniania i autoryzacji oraz prezentację spójnego widoku katalogu, niezależnie od jego wewnętrznej struktury.
+![Diagram architektury proponowanego użycia](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/docker-openldap-proxy-diagram-en.png)
 
-### 1.2. Diagram architektury
-
-![Diagram architektury proponowanego użycia](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/docker-openldap-proxy-diagram-pl.png)
-
-### 1.3. Wersje oprogramowania
+### 1.3. Software versions
 
 * **OpenLDAP:** OpenLDAP: slapd 2.6.7+dfsg-1~exp1ubuntu8.2 (Dec 9 2024 02:50:18) Ubuntu Developers
-* **System operacyjny kontenera:** ubuntu:latest `org.opencontainers.image.version=24.04`
-* **Kontrolery domeny AD:** Windows Server 2016
-* **Narzędzia:** [Apache Directory Studio](https://directory.apache.org/studio/), `ldapsearch`, `ldapadd`, `ldapmodify`, `ping`, `telnet`
+* **Container operating system:** ubuntu:latest `org.opencontainers.image.version=24.04`
+* **AD Domain Controllers:** Windows Server 2016
+* **Tools:** [Apache Directory Studio](https://directory.apache.org/studio/), `ldapsearch`, `ldapadd`, `ldapmodify`, `ping`, `telnet`
 
----
+## 2. Starting the OpenLDAP Proxy Server
 
-## 2. Uruchomienie serwera OpenLDAP Proxy
+[Docker image](https://hub.docker.com/r/scisoftware/openldap-proxy/tags) is available.
 
-Dostępny jest [obraz Docker'a](https://hub.docker.com/r/scisoftware/openldap-proxy/tags).
+We run the `openldap-proxy` container with the OpenLDAP server as a Docker compose, defined in the `docker-compose.yml` file, or directly from the command line. Below are some example commands:
 
-Kontener `openldap-proxy` z serwerem OpenLDAP uruchamiamy za jako kompozycja Docker, której definicja znajduje się w pliku `docker-compose.yml` albo bezpośrednio z linii komend. Poniżej przykłady poleceń z linii komend:
-
-* Przykładowe uruchomienie kontenera jako kompozycja:
+* Example container launch as a compose:
 
 ```bash
 docker compose -f docker-compose.yml --env-file ldap-conf.env up -d
 ```
 
-* Przykładowe uruchomienie kontenera bez kompozycji (Linux):
+* Example container launch without compositing (Linux):
 
 ```bash
 docker run --name openldap-proxy -p 389:389 -p 636:636 \
@@ -59,7 +53,7 @@ docker run --name openldap-proxy -p 389:389 -p 636:636 \
  --detach scisoftware/openldap-proxy:latest
 ```
 
-* Przykładowe uruchomienie kontenera bez kompozycji (Windows Cmd):
+* Example of running a container without composition (Windows Cmd):
 
 ```bash
 docker run --name openldap-proxy -p 389:389 -p 636:636 ^
@@ -77,42 +71,39 @@ docker run --name openldap-proxy -p 389:389 -p 636:636 ^
  --detach scisoftware/openldap-proxy:latest
 ```
 
-### 2.1. Kroki instalacji
+### 2.1. Installation Steps
 
-#### 2.1.1 Przygotuj plik z konfiguracją kompozycji Docker
+#### 2.1.1 Prepare the Docker theme configuration file
 
-Utwórz swoją własną konfigurację kompozycji Docker. Skopiuj zawarty w projekcie przykładowy plik `ldap-conf.env` do pliku o twojej nazwie np. `my-ldap-conf.env`. Plik konfiguracyjny zawiera następujące parametry:
+Create your own Docker theme configuration. Copy the sample `ldap-conf.env` file included in the project to a file with your own name, e.g., `my-ldap-conf.env`. The configuration file contains the following parameters:
 
-| Nazwa parametru | Opis |
+| Parameter Name | Description |
 | :---- | :---- |
-| LDAP_ORG_DC | Nazwa, akronim organizacji. Przykładowa wartość: `scisoftware`. |
-| LDAP_LOCAL_OLC_SUFFIX | DN (Distinguished Name) domeny lokalnej bazy MDB, w której przechowywani będą loklani użytkownicy, grupy; pierwsza wartość atrybutu `dc` musi się nazywać tak jak wcześniej zdefiniowana nazwa organizacji w parametrze `${LDAP_ORG_DC}`. Przykładowo: `dc=scisoftware,dc=local`. |
-| LDAP_BASED_OLC_SUFFIX | DN (Distinguished Name) domeny bazowej serwera OpenLDAP. Do tej domeny będą przypinane poszczególne repozytoria zewnętrzne (proxy). Wartość przykładowa to `dc=scisoftware,dc=pl`. Do tej domeny automatycznie (podczas inicjalizacji bazy proxy) zostanie również podpieta lokalna baza MDB pod nazwą drzewa `ou=local,${LDAP_BASED_OLC_SUFFIX}` np. `ou=local,dc=scisoftware,dc=pl`. |
-| LDAP_ROOT_CN | Nazw użytkownika z uprawnieniami superuser'a. Przykładowo `manager`.|
-| LDAP_ROOT_PASSWD_PLAINTEXT |  Hasło użytkownika z uprawnieniami superuser'a. Hasło rozkodowane. Podczas inicjalizacji zostanie zakodowane i umieszczone w odpowiednim entry użytkownika. Przykładowo `secret`. |
-| LDAP_OLC_ACCESS | Końcowa konfiguracja roli praw dostępu `olcAccess: to *`. Wartość domyślna to `"by * none"`. O tym jak są predefiniowane prawa do baz danych zostanie opisane w dalszej części dokumentu, jednakże niektóre z oprogramowań wymaga wartości `"by * read"` np. konfiguracja Kerberos, [ldap-ui](https://github.com/dnknth/ldap-ui). |
-| SERVER_DEBUG | Poziom logowania zdarzeń. Parametr przydatny podczas analizy problemów, na które możemy się natknąć podczas budowania własnych rozwiązań wykorzystujących niniejszy obraz OpenLDAP proxy. Wartość domyślna to `32`. |
-| LDAP_TECHNICAL_USER_CN | (opcjonalne) Nazwa predefiniowanego użytkownika technicznego, za pośrednictwem, którego będziemy się komunikować w celu uzyskania dostępu do danych serwera OpenLDAP. Wartość domyślna to `frontendadmin`.|
-| LDAP_TECHNICAL_USER_PASSWD | (opcjonalne) Hasło użytkownika technicznego. Hasło rozkodowane. Wartość domyślna to `secret`. |
-| PHPLDAPADMIN_HTTPS | (opcjonalne) Parametr konfiguracji potrzebny gdy uruchamiasz kompozycję wraz z aplikacją UI [osixia/phpldapadmin](https://github.com/osixia/docker-phpLDAPadmin). Definiuje czy aplikacja ma być uruchomiona z protokołem HTTPS. Wartość domyślna to `true`. |
-| PHPLDAPADMIN_HTTPS_CRT_FILENAME | (opcjonalne) Parametr konfiguracji potrzebny gdy uruchamiasz kompozycję wraz z aplikacją UI [osixia/phpldapadmin](https://github.com/osixia/docker-phpLDAPadmin). Definiuje nazwę pliku z certyfikatem SSL serwera. Wartość domyślna to `server-cert-chain.crt`. |
-| PHPLDAPADMIN_HTTPS_KEY_FILENAME | (opcjonalne) Parametr konfiguracji potrzebny gdy uruchamiasz kompozycję wraz z aplikacją UI [osixia/phpldapadmin](https://github.com/osixia/docker-phpLDAPadmin). Definiuje nazwę pliku z kluczem prywatnym serwera. Wartość domyślna to `server-cert.key`. |
-| PHPLDAPADMIN_HTTPS_CA_CRT_FILENAME | (opcjonalne) Parametr konfiguracji potrzebny gdy uruchamiasz kompozycję wraz z aplikacją UI [osixia/phpldapadmin](https://github.com/osixia/docker-phpLDAPadmin). Definiuje nazwę pliku z CA organizacji, która podpisała certyfikat SSL serwera. Wartość domyślna to `scisoftware_intermediate_ca.crt`. |
+| LDAP_ORG_DC | Name, acronym of the organization. Example value: `scisoftware`. |
+| LDAP_LOCAL_OLC_SUFFIX | DN (Distinguished Name) of the local MDB domain where local users and groups will be stored; the first value of the `dc` attribute must be named after the previously defined organization name in the `${LDAP_ORG_DC}` parameter. Example: `dc=scisoftware,dc=local`. |
+| LDAP_BASED_OLC_SUFFIX | DN (Distinguished Name) of the OpenLDAP server's base domain. Individual external repositories (proxies) will be attached to this domain. An example value is `dc=scisoftware,dc=pl`. A local MDB will also be attached to this domain automatically (during proxy database initialization) under the tree name `ou=local,${LDAP_BASED_OLC_SUFFIX}`, e.g., `ou=local,dc=scisoftware,dc=pl`. | | LDAP_ROOT_CN | Username of the user with superuser privileges. For example, `manager`. | | LDAP_ROOT_PASSWD_PLAINTEXT | Password of the user with superuser privileges. The password will be decrypted. During initialization, it will be encrypted and placed in the appropriate user entry. For example, `secret`. | | LDAP_OLC_ACCESS | Final configuration of the `olcAccess: to *` access rights role. The default value is `"by * none"`. The predefined database rights will be described later in this document, however, some software requires the `"by * read"` value, e.g., Kerberos configuration, [ldap-ui](https://github.com/dnknth/ldap-ui). |
+| SERVER_DEBUG | Event logging level. This parameter is useful for analyzing issues you may encounter when building your own solutions using this OpenLDAP proxy image. The default value is `32`. |
+| LDAP_TECHNICAL_USER_CN | (optional) The name of the predefined technical user through whom you will communicate to access OpenLDAP server data. The default value is `frontendadmin`. |
+| LDAP_TECHNICAL_USER_PASSWD | (optional) Technical user password. Decoded password. Default value is `secret`. |
+| PHPLDAPADMIN_HTTPS | (optional) Configuration parameter needed when launching the theme with the [osixia/phpldapadmin](https://github.com/osixia/docker-phpLDAPadmin) UI application. Defines whether the application should be launched using the HTTPS protocol. Default value is `true`. |
+| PHPLDAPADMIN_HTTPS_CRT_FILENAME | (optional) Configuration parameter needed when launching the theme with the [osixia/phpldapadmin](https://github.com/osixia/docker-phpLDAPadmin) UI application. Defines the filename of the server's SSL certificate. Default value is `server-cert-chain.crt`. |
+| PHPLDAPADMIN_HTTPS_KEY_FILENAME | (optional) A configuration parameter needed when running the theme with the [osixia/phpldapadmin](https://github.com/osixia/docker-phpLDAPadmin) UI application. It defines the filename of the server's private key. The default value is `server-cert.key`. |
+| PHPLDAPADMIN_HTTPS_CA_CRT_FILENAME | (optional) A configuration parameter needed when running the theme with the [osixia/phpldapadmin](https://github.com/osixia/docker-phpLDAPadmin) UI application. It defines the filename of the CA of the organization that signed the server's SSL certificate. The default value is `scisoftware_intermediate_ca.crt`. |
 
-#### 2.1.2 Przygotuj wolumeny dla danych bazy proxy
+#### 2.1.2 Prepare Volumes for Proxy Database Data
 
-Uruchomienie kontenera wymaga `openldap-proxy` minimum 4 wolumenów, w których przechowuje konfiguracje oraz pliki bazy danych. Gdy przejrzysz sobie plik `docker-compose.yml` zauważysz, że kompozycja ma predefiniowane lokalizacje wolumenów w katalogu lokalnym maszyny, na której kontener jest uruchamiany.
+Running the container requires `openldap-proxy` to have at least four volumes where it stores configuration and database files. If you review the `docker-compose.yml` file, you'll notice that the compose has predefined volume locations in the local directory of the machine running the container.
 
-Poniżej lista wykorzystywanych przez kontener `openldap-proxy` wolumenów:
+Below is a list of the volumes used by the `openldap-proxy` container:
 
-| Nazwa wolumenu  | Opis       |
+| Volume Name | Description |
 | :---- | :---- |
-| `openldap` | Wolumen główny, w którym przechowywane są dane lokalnych baz danych MDB. Lokalizacja domyślna to lokalny katalog `/d/mercury/openldap-proxy`. Wolumen podłączony jest do ścieżki `/var/lib/ldap` na kontenerze. |
-| `slapd-d` | Wolumen z konfiguracją instancji OpenLDAP proxy `(cn=config)`. Lokalizacja domyślna to lokalny katalog `/d/mercury/slapd.d-proxy`. Wolumen podłączony jest do ścieżki `/etc/ldap/slapd.d` na kontenerze. |
-| `ca-certificates` | Wolumen z certyfikatami potwierdzającymi tożsamość podłączanych serwerów zewnętrznych, których komunikacja wykorzystuje SSL (protokół `ldaps`). Konfiguracja komunikacji SSL zawarta jest w pliku `/etc/ldap/ldap.conf` na kontenerze. We wskazanym, lokalnym katalogu umieść i umieszczaj w przyszłości certyfikaty zaufanych organizacji i serwerów LDAP. Lokalizacja domyślna to lokalny katalog `/d/mercury/openldap-cacerts`. Wolumen podłączony jest do ścieżki `/usr/local/share/ca-certificate` na kontenerze. |
-| `lapd-workspace` | (opcjonalnie) wolumen z różnym skryptami potrzebnymi do analizy problemów, czy tez może dostosowania parametrów baz danych w kontenerze wykorzystującym niniejszy obraz. Lokalizacja domyślna to lokalny katalog `/d/workspace/git/docker-openldap-proxy/workspace`. Wolumen podłączony jest do ścieżki `/opt/workspace` na kontenerze. |
+| `openldap` | The root volume, where local MDB database data is stored. The default location is the local `/d/mercury/openldap-proxy` directory. The volume is mounted to the `/var/lib/ldap` path on the container. |
+| `slapd-d` | A volume with the OpenLDAP proxy instance configuration `(cn=config)`. The default location is the local `/d/mercury/slapd.d-proxy` directory. The volume is connected to the `/etc/ldap/slapd.d` path on the container. |
+| `ca-certificates` | A volume with certificates confirming the identity of connected external servers that communicate using SSL (the `ldaps` protocol). The SSL communication configuration is contained in the `/etc/ldap/ldap.conf` file on the container. Place and store certificates for trusted organizations and LDAP servers in the specified local directory. The default location is the local `/d/mercury/openldap-cacerts` directory. The volume is connected to the `/usr/local/share/ca-certificate` path on the container. |
+| `lapd-workspace` | (optional) a volume with various scripts needed for analyzing problems or perhaps adjusting database parameters in the container using this image. The default location is the local directory `/d/workspace/git/docker-openldap-proxy/workspace`. The volume is connected to the `/opt/workspace` path in the container. |
 
-Poniżej fragment definicji kompozycji:
+Below is an excerpt from the composition definition:
 
 ```yml
     volumes: 
@@ -122,67 +113,66 @@ Poniżej fragment definicji kompozycji:
       - lapd-workspace:/opt/workspace:rw
 ```
 
-### 2.2. Automatyczne tworzenie instancji OpenLDAP
+### 2.2. Automatically Creating an OpenLDAP Instance
 
-Po uruchomieniu kontenera, skrypt startujący podejmie próbę utworzenia bazy danych i uruchomienia instancji serwera OpenLDAP.
-Próba utworzenia bazy danych jest podejmowana na podstawie warunku istnienia pliku `ldap.init` w katalogu `/var/lib/ldap` na kontenerze. Ten katalog jest mapowany na wolumen o nazwie `openldap`.
+After starting the container, the startup script will attempt to create a database and start an OpenLDAP server instance.
+The database creation attempt is based on the existence of the `ldap.init` file in the `/var/lib/ldap` directory on the container. This directory maps to the volume named `openldap`.
 
-> [!TIP] 
-> Jeżeli chcesz by baza danych OpenLDAP została zbudowana od nowa to wystarczy usunąć plik `ldap.init`.
+> [!TIP]
+> If you want to rebuild the OpenLDAP database, simply delete the `ldap.init` file.
 
-> [!CAUTION] 
-> Jeżeli usuniesz plik `ldap.init` utracisz wszystkie dotychczasowe dane.
+> [!CAUTION]
+> If you delete the `ldap.init` file, you will lose all existing data.
 
-### 2.3. Dodawanie proxy do zewnętrznej bazy
+### 2.3. Adding a Proxy to an External Database
 
-Dodawanie kolejnej bazy zewnętrznej odbywa się już po uruchomieniu kontenera. Uruchamiamy ręcznie skrypt `add-proxy-to-external-ldap.sh`, który znajdziesz w katalogu `/opt/service` na kontenerze.
-Aby uruchomić skrypt zaloguj się do konsoli uruchomionego kontenera wydając polecenia w linii komend:
+Adding another external database is done after the container is started. Manually run the `add-proxy-to-external-ldap.sh` script, which can be found in the `/opt/service` directory on the container. To run the script, log in to the console of the running container by issuing commands in the command line:
 
 ```bash
-export CONTAINER_ID=`docker container ls | grep "<nazwa_kontenera>" | awk '{print $1}'`
+export CONTAINER_ID=`docker container ls | grep "<container_name>" | awk '{print $1}'`
 docker exec -it ${CONTAINER_ID} bash
 ```
 
-* gdzie `<nazwa_kontenera>` to nazwa kontenera pod jaką został uruchomiona usługa OpenLDAP np. `openldap-proxy`
+* where `<container_name>` is the name of the container under which the OpenLDAP service was launched, e.g., `openldap-proxy`
 
-Przykład:
+Example:
 
 ```bash
 export CONTAINER_ID=`docker container ls | grep "openldap-proxy" | awk '{print $1}'`
 docker exec -it ${CONTAINER_ID} bash
 ```
 
-Po zalogowaniu się do konsoli kontenera uruchamiamy skrypt `add-proxy-to-external-ldap.sh` z odpowiednimi parametrami wejściowymi. Poniżej opis wymaganych parametrów:
+After logging in to the container console, run the `add-proxy-to-external-ldap.sh` script with the appropriate input parameters. The required parameters are described below:
 
-| Nazwa parametru | Opis |
+| Parameter Name | Description |
 | :---- | :---- |
-| `BIND_LDAP_URI=<value>` | Adres URL wskazujący na zewnętrzną instancję LDAP, np. `<ldap|ldaps>://example.com`. |
-| `BIND_DN=<value>` | Nazwa wyróżniająca użytkownika, przez którą będzie realizowana komunikacja. |
-| `BIND_PASSWD_PLAINTEXT=<value>` | Hasło użytkownika, przez które będzie realizowana komunikacja. |
-| `BIND_BASE_CTX_SEARCH=<value>` | Główna gałąź wyszukiwania podłączanej instancji LDAP (base context, kontekst bazowy). | 
-| `LDAP_PROXY_OU_NAME=<value>` | Nazwa jednostki organizacyjnej, w której powinno pojawić się połączone drzewo LDAP. | 
+| `BIND_LDAP_URI=<value>` | URL pointing to the external LDAP instance, e.g., `<ldap|ldaps>://example.com`. |
+| `BIND_DN=<value>` | The distinguished name of the user through which communication will be performed. |
+| `BIND_PASSWD_PLAINTEXT=<value>` | The password of the user through which communication will be performed. |
+| `BIND_BASE_CTX_SEARCH=<value>` | The main search branch of the LDAP instance being connected (base context). |
+| `LDAP_PROXY_OU_NAME=<value>` | The name of the organizational unit where the merged LDAP tree should appear. |
 
-Opcjonalnie można użyć parametrów jednej z opcji:
+Optional parameters can be used with one of the following options:
 
-| Nazwa opcji | Opis |
+| Option Name | Description |
 | :---- | :---- |
-| `--help` | Prezentacja danych pomocy dla uruchomienia skryptu. |
-| `--test` | Testowanie poprawności polecenia. |
-| `--addADAttributesMapping` | dodaje mapowanie nazw atrybutów z zewnętrznej usługi Active Directory do lokalnego OpenLDAP. |
+| `--help` | Presents help data for running the script. |
+| `--test` | Tests the command for correctness. |
+| `--addADAttributesMapping` | adds a mapping of attribute names from the external Active Directory to the local OpenLDAP. |
 
-Wszystkie powyższe informacje można uzyskać wydając polecenie:
+All of the above information can be obtained by issuing the command:
 
 ```bash
 ./add-proxy-to-external-ldap.sh --help
 ```
 
 > [!IMPORTANT]
-> Zanim wydasz komendę dodania bazy wpierw przetestuj czy definicja połączenia do niej jest poprawna. Użyj opcji `--test` podczas pierwszego uruchomienia skryptu.
+> Before issuing the command to add a database, first test whether the connection definition is correct. Use the `--test` option when running the script for the first time.
 
 > [!IMPORTANT]
-> Definiując połączenia do AD używaj opcji `--addADAttributesMapping`. Jeżeli zapomnisz, to się nie martw. Zawsze możesz później uruchomić skrypt `./add-mapping-of-attribute-names-AD-to-OpenLDAP.sh <nazwa_jednostki_organizacyjnej>`.
+> When defining connections to AD, use the `--addADAttributesMapping` option. If you forget, don't worry. You can always run the `./add-mapping-of-attribute-names-AD-to-OpenLDAP.sh <organizational_unit_name>` script later.
 
-Przykład 1:
+Example 1:
 
 ```bash Testowanie połączenia do AD o nazwie "pluton"
 ./add-proxy-to-external-ldap.sh \
@@ -192,9 +182,9 @@ Przykład 1:
   BIND_BASE_CTX_SEARCH=CN=Users,DC=example,DC=local \
   LDAP_PROXY_OU_NAME=pluton --addADAttributesMapping --test 
 ```
-* dodanie połączenia nastąpi po uruchomieniu powyższego polecenia bez opcji `--test`.
+* The connection will be added after running the above command without the `--test` option.
 
-Przykład 2:
+Example 2:
 
 ```bash Testowanie połączenia do OpenLDAP o nazwie "ibpm"
 ./add-proxy-to-external-ldap.sh \
@@ -204,36 +194,35 @@ Przykład 2:
   BIND_BASE_CTX_SEARCH=ou=ibpm.pro,dc=ibpm,dc=example \
   LDAP_PROXY_OU_NAME=ibpm --test
 ```
-* dodanie połączenia nastąpi po uruchomieniu powyższego polecenia bez opcji `--test`.
+* the connection will be added after running the above command without the `--test` option.
 
-### 2.4. Pliki LDIF użyte do konfiguracji
+### 2.4. LDIF Files Used for Configuration
 
-Poniżej znajduje się lista kluczowych plików LDIF użytych do konfiguracji serwera proxy. Pliki te znajdują się w katalogu `init` projektu i są umieszczane w lokalizacji `/opt/init` na kontenerze.
+Below is a list of key LDIF files used for proxy server configuration. These files are located in the project's `init` directory and are placed in the `/opt/init` location on the container.
 
-* `01-slapd.conf` - Podstawowa konfiguracja instancji baz danych OpenLDAP zawierająca definicje `(cn=config)` oraz `(cn=monitor)`. Zawiera również listę załadowanych schematów (definicji atrybutów i klas przechowywanych w bazach obiektów).
-* `02-mdbdatabase-create.ldif` - Definicja lokalnej bazy `mdb` do przechowywania danych lokalnych użytkowników. Baza, której DN został zdefiniowany w zmiennej `${LDAP_LOCAL_OLC_SUFFIX}` np. `dc=scisoftware,dc=local`.
-* `03-metadatabase-create.ldif` - Definicja lokalnej bazy `mdb` podrzędnej (z polem `olcSubordinate: TRUE`). Baza, której DN został zdefiniowany jako `dc=subordinate,${LDAP_BASED_OLC_SUFFIX}` np. `dc=subordinate,dc=scisoftware,dc=pl`. W praktyce nie korzystamy z tej bazy, jednak niejawnie pozwala ona na poruszanie się po drzewie głównym utworzonej bazy `meta` z DN zdefiniowanym w zmiennej `${LDAP_LOCAL_OLC_SUFFIX}` np. `dc=scisoftware,dc=pl`. Dzięki takiej konfiguracji podłączane w przyszłości bazy będą widoczne jako jej poddrzewa, ich dane będą przetwarzane przy definicji `baseDN=${LDAP_LOCAL_OLC_SUFFIX}` np. `baseDN=dc=scisoftware,dc=pl` (zobacz artykuł [Combining OpenLDAP and Active Directory via OpenLDAP meta backend](https://serverfault.com/questions/1152227/combining-openldap-and-active-directory-via-openldap-meta-backend/1190129?noredirect=1#comment1542537_1190129)). Plik konfiguracji zawiera również konfigurację połączenia (proxy) z lokalną bazą `mdb` zdefiniowaną w pliku `02-mdbdatabase-create.ldif`. Podłączona lokalna baza danych będzie miała następującą wartość DN: `ou=local,${LDAP_BASED_OLC_SUFFIX}` np. `ou=local,dc=scisoftware,dc=pl`.
-* `04-add-proxy-to-external-ldap.ldif` - Dodanie podbazy (proxy). Plik wykorzystywany przez skrypt dodawania/definiowania komunikacji z zewnętrzną bazą LDAP. Plik używany przez skrypt `add-proxy-to-external-ldap.sh` i wykorzystywany jako mechanizm dodawania kolejnej bazy zewnętrznej.
-* `06-add-all-dbmap-for-ad-proxy.ldif` - Dodanie mapowania nazw atrybutów zewnętrznej bazy AD na lokalne nazwy atrybutów OpenLDAP. Plik używany przez skrypt `add-proxy-to-external-ldap.sh`, który wykorzystywany jest jako mechanizm dodawania kolejnej bazy zewnętrznej oraz `add-mapping-of-attribute-names-AD-to-OpenLDAP.sh`, który realizuje zadanie dodawania atrybutów do już istniejącego połączenia z zewnętrzną bazą LDAP.
+* `01-slapd.conf` - Basic configuration of the OpenLDAP database instance, containing the `(cn=config)` and `(cn=monitor)` definitions. It also contains a list of loaded schemas (attribute and class definitions stored in object databases).
+* `02-mdbdatabase-create.ldif` - Definition of the local `mdb` database for storing local user data. This database has its DN defined in the `${LDAP_LOCAL_OLC_SUFFIX}` variable, e.g., `dc=scisoftware,dc=local`.
+* `03-metadatabase-create.ldif` - Definition of a local `mdb` subordinate database (with the `olcSubordinate: TRUE` field). A database whose DN was defined as `dc=subordinate,${LDAP_BASED_OLC_SUFFIX}`, e.g. `dc=subordinate,dc=scisoftware,dc=pl`. In practice, we do not use this database, but it implicitly allows navigating the main tree of the created `meta` database with the DN defined in the `${LDAP_LOCAL_OLC_SUFFIX}` variable, e.g. `dc=scisoftware,dc=pl`. Thanks to this configuration, databases connected in the future will be visible as its subtrees, their data will be processed with the definition of `baseDN=${LDAP_LOCAL_OLC_SUFFIX}`, e.g. `baseDN=dc=scisoftware,dc=pl` (see the article [Combining OpenLDAP and Active Directory via OpenLDAP meta backend](https://serverfault.com/questions/1152227/combining-openldap-and-active-directory-via-openldap-meta-backend/1190129?noredirect=1#comment1542537_1190129)). The configuration file also contains the configuration of the connection (proxy) to the local `mdb` database defined in the `02-mdbdatabase-create.ldif` file. The connected local database will have the following DN value: `ou=local,${LDAP_BASED_OLC_SUFFIX}`, e.g., `ou=local,dc=scisoftware,dc=pl`.
+* `04-add-proxy-to-external-ldap.ldif` - Adds a subdatabase (proxy). This file is used by the script for adding/defining communication with an external LDAP database. This file is used by the `add-proxy-to-external-ldap.sh` script and is used as a mechanism for adding another external database.
+* `06-add-all-dbmap-for-ad-proxy.ldif` - Adds a mapping of external AD database attribute names to local OpenLDAP attribute names. This file is used by the `add-proxy-to-external-ldap.sh` script, which is used as a mechanism for adding another external database, and `add-mapping-of-attribute-names-AD-to-OpenLDAP.sh`, which adds attributes to an existing connection to an external LDAP database.
 
-### 2.5. Konfiguracja SSL/TLS
+### 2.5. SSL/TLS Configuration
 
-* **Pliki certyfikatów:**
+* **Certificate Files:**
   * `olcTLSCertificateFile`: `/usr/local/share/ca-certificate/server_cert.pem`
   * `olcTLSCertificateKeyFile`: `/usr/local/share/ca-certificate/server_key.pem`
   * `olcTLSCACertificateFile`: `/usr/local/share/ca-certificate/ca_certs.pem`
-* **Wymagane TLS:** `olcTLSVerifyClient: demand` (lub `allow`, `never` w zależności od wymagań)
-* **Wersje protokołów:** `olcTLSProtocolMin: 3.2`
+* **TLS Required:** `olcTLSVerifyClient: demand` (or `allow`, `never` depending on requirements)
+* **Protocol Versions:** `olcTLSProtocolMin: 3.2`
 
-### 2.6. Niestandardowe schematy atrybutów
+### 2.6. Custom Attribute Schemas
 
 > [!NOTE]
-> W ramach dostosowania schematu `core` zmieniono definicję atrybutu `uniqueMember`. Oryginalnie jest on w.g RFC2256 definicją unikalnego członka grupy i jest typu "Nazwa lub unikalny UID" `1.3.6.1.4.1.1466.115.121.1.34 - Name and Optional UID syntax`. Jednakże typ ten nie jest tłumaczony z wartości zewnętrznej bazy danych na lokalny podczas działania proxy. Dlatego zmieniono jedgo definicje na `( 2.5.4.50 NAME 'uniqueMember' DESC 'RFC2256: unique member of a group' EQUALITY distinguishedNameMatch SUP distinguishedName )`.
+> As part of the `core` schema adaptation, the definition of the `uniqueMember` attribute has been changed. Originally, it defines a unique group member according to RFC2256 and is of type "Name or unique UID" `1.3.6.1.4.1.1466.115.121.1.34 - Name and Optional UID syntax`. However, this type is not translated from the external database value to the local one during proxy execution. Therefore, one definition has been changed to `( 2.5.4.50 NAME 'uniqueMember' DESC 'RFC2256: unique member of a group' EQUALITY distinguishedNameMatch SUP distinguishedName )`.
 
+#### 2.6.1. CSZU Attribute Schema
 
-#### 2.6.1. Schemat atrybutów CSZU
-
-**CSZU** (polski skrót od Centralny System Zarządzania Użytkownikami) - to autorski system repozytorium użytkowników. Załadowana schema zawiera definicje klas obiektów o nazwach `cszuAttrs`, `cszuPrivs`, `cszuUser` oraz `cszuGroup`:
+**CSZU** (Polish abbreviation for Central User Management System) is a proprietary user repository system. The loaded schema contains definitions of object classes named `cszuAttrs`, `cszuPrivs`, `cszuUser`, and `cszuGroup`:
 
 <details>
 <summary>schemas\005-cszu.ldif</summary>
@@ -287,9 +276,9 @@ olcObjectClasses: ( 1.3.6.1.4.1.2021.3.2.1 NAME 'cszuGroup' DESC 'Attributes use
 
 </details>
 
-#### 2.6.2. Schemat atrybutów AD
+#### 2.6.2. AD Attribute Schema
 
-Schemat pozwalający na reprezentacje w ramach serwera OpenLDAP atrybutów o nazwach pochodzących AD. Zawiera definicje klas obiektów o nazwach `aDPerson`, `groupOfMembers`, `team`, `container`, `group` oraz `user`:
+This schema allows for the representation of attributes with AD-derived names within an OpenLDAP server. It contains definitions of object classes named `aDPerson`, `groupOfMembers`, `team`, `container`, `group`, and `user`:
 
 <details>
 <summary>schemas\002-ADPerson.ldif</summary>
@@ -336,182 +325,173 @@ olcObjectClasses: ( 1.2.840.113556.1.5.9 NAME 'user' SUP inetOrgPerson STRUCTURA
 ```
 </details>
 
-### 2.7 Predefiniowane wpisy w lokalnej bazie
+### 2.7 Predefined Entries in the Local Database
 
-Podczas pierwszego uruchomienia usługi zawartość lokalnej bazy danych jest inicjowana przy użyciu predefiniowanych wpisów.
+When the service is first started, the local database is initialized using predefined entries.
 
-- Baza danych zawiera predefiniowane 4 jednostki organizacyjne (OU):
-  - `ou=Groups,ou=local,${LDAP_BASED_OLC_SUFFIX}` - dla danych lokalnych grup, przykład: `ou=Groups,ou=local,dc=scisoftware,dc=pl`
-  - `ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - dla danych lokalnych użytkowników
-  - `ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}`` - dla danych lokalnych użytkowników technicznych; wpisy użytkownika z tej jednostki organizacyjnej mają uprawnienia do odczytu wszystkich wpisów; można ich używać w definicji połączenia dla systemów zewnętrznych.
-  - `ou=Admins,${LDAP_BASED_OLC_SUFFIX}` -dla danych lokalnych użytkowników administracyjnych; wpisy użytkownika z tej jednostki organizacyjnej mają pełne uprawnienia do zarządzania danymi.
+- The database contains four predefined organizational units (OUs):
+  - `ou=Groups,ou=local,${LDAP_BASED_OLC_SUFFIX}` - for local group data, example: `ou=Groups,ou=local,dc=scisoftware,dc=pl`
+  - `ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - for local user data
+  - `ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}` - for local technical user data; user entries from this OU have read permissions for all entries; they can be used in connection definitions for external systems. - `ou=Admins,${LDAP_BASED_OLC_SUFFIX}` - for local administrative user data; user entries from this organizational unit have full data management permissions.
 
-- Predefiniowane wpisy definiujące grupy użytkowników:
-  - `cn=mrc-admin,ou=local,ou=Groups,${LDAP_BASED_OLC_SUFFIX}` - grupa użytkowników z uprawnieniami administratora, która wykorzystywana jest przez system [Mercury 3.0 (HgDB)](https:///hgdb.org).
-  - `cn=mrc-user,ou=local,ou=Groups,${LDAP_BASED_OLC_SUFFIX}` - grupa użytkowników z uprawnieniami dostępu do danych , która wykorzystywana jest przez system [Mercury 3.0 (HgDB)](https:///hgdb.org).
+- Predefined entries defining user groups:
+  - `cn=mrc-admin,ou=local,ou=Groups,${LDAP_BASED_OLC_SUFFIX}` - a user group with administrator privileges, used by the [Mercury 3.0 (HgDB)](https:///hgdb.org) system.
+  - `cn=mrc-user,ou=local,ou=Groups,${LDAP_BASED_OLC_SUFFIX}` - a user group with data access permissions, used by the [Mercury 3.0 (HgDB)](https:///hgdb.org) system.
 
-- Predefiniowane wpisy definiujące użytkowników:
-  - `${LDAP_ROOT_CN}`,ou=local,${LDAP_BASED_OLC_SUFFIX} - menedżer LDAP, użytkownik ma wszystkie uprawnienia do wszystkich wpisów; hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_ROOT_PASSWD_PLAINTEXT` (wartość domyślna: „secret”) i powinno być zmienione w środowiskach produkcyjnych. Przykład nazwy: `cn=manager,ou=local,dc=scisoftware,dc=pl`
-  - `cn=ldapadmin,ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - administrator, użytkownik ma uprawnienia do zapisu do wszystkich wpisów; hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno być zmienione w środowiskach produkcyjnych.
-  - `uid=ldapui,ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - administrator, użytkownik ma uprawnienia do zapisu do wszystkich wpisów; hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno zostać zmienione w środowiskach produkcyjnych. Wpis można wykorzystać do integracji z interfejsem użytkownika LDAP.
-  - `cn=${LDAP_TECHNICAL_USER_CN},ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}` - użytkownik techniczny do definiiowania komunikacji z serwerem OpenLDAP, domyślna wartość `LDAP_TECHNICAL_USER_CN` to „frontendadmin”, wpis użytkownika ma uprawnienia do odczytu wszystkich wpisów; hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno zostać zmienione w środowiskach produkcyjnych.
-  - `uid=mrcmanager,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - przykładowy użytkownik z uprawnieniami administratora systemu [Mercury 3.0 (HgDB)](https:///hgdb.org); hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno zostać zmienione w środowiskach produkcyjnych.
-  - `uid=mrcuser,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - przykładowy użytkownik z uprawnieniami użytkownika systemu [Mercury 3.0 (HgDB)](https:///hgdb.org); hasło użytkownika należy zdefiniować w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i zmienić w środowiskach produkcyjnych.
-
+- Predefined user definition entries:
+  - `${LDAP_ROOT_CN}`,ou=local,${LDAP_BASED_OLC_SUFFIX} - LDAP manager, the user has all permissions for all entries; the user's password should be defined in the `LDAP_ROOT_PASSWD_PLAINTEXT` environment variable (default value: "secret") and should be changed in production environments. Example name: `cn=manager,ou=local,dc=scisoftware,dc=pl`
+  - `cn=ldapadmin,ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - administrator, the user has write permissions for all entries; the user's password should be defined in the `LDAP_TECHNICAL_USER_PASSWD` environment variable (default value: "secret") and should be changed in production environments. - `uid=ldapui,ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - administrator, this user has write permissions to all entries; the user's password should be defined in the `LDAP_TECHNICAL_USER_PASSWD` environment variable (default value: "secret") and should be changed in production environments. This entry can be used for integration with the LDAP user interface.
+  - `cn=${LDAP_TECHNICAL_USER_CN},ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}` - technical user for defining communication with the OpenLDAP server; the default value of `LDAP_TECHNICAL_USER_CN` is "frontendadmin", this user entry has read permissions to all entries; The user's password should be defined in the `LDAP_TECHNICAL_USER_PASSWD` environment variable (default value: "secret") and should be changed in production environments.
+  - `uid=mrcmanager,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - an example user with system administrator privileges for [Mercury 3.0 (HgDB)](https:///hgdb.org); the user's password should be defined in the `LDAP_TECHNICAL_USER_PASSWD` environment variable (default value: "secret") and should be changed in production environments.
+  - `uid=mrcuser,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - an example user with system user privileges for [Mercury 3.0 (HgDB)](https:///hgdb.org); the user password should be defined in the `LDAP_TECHNICAL_USER_PASSWD` environment variable (default value: "secret") and changed in production environments.
+  
 ![Przykład predefiniowanego drzewa lokalnej bazy danych](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/sample-predefined-tree-by-apache-dir-studio.png)
 
----
+## 3. Mapping Attributes and Object Classes (`olcDbMap`)
 
-## 3. Mapowanie atrybutów i klas obiektów (`olcDbMap`)
+Attribute mapping is performed using the `olcDbMap` attribute in the configuration of each `olcMetaSub` subdatabase.
 
-Mapowanie atrybutów odbywa się za pomocą atrybutu `olcDbMap` w konfiguracji każdej podbazy `olcMetaSub`.
+### 3.1. Predefined Mappings Table
 
-### 3.1. Tabela predefiniowanych mapowań
+Below is a table of predefined mappings for connections to AD databases. The table below lists the mapped attributes and was developed based on the most commonly used mappings in various IT systems.
 
-Poniżej tabela predefiniowanych mapowań dla połączeń do baz danych AD. Poniższa tabela zawiera listę mapowanych atrybutów i została opracowana na podstawie najczęściej stosowanych mapowaniach w różnych systemach IT. 
-
-| Atrybut<br/>w OpenLDAP | Atrybut<br/>w Active Directory | Opis |
+| Attribute<br/>in OpenLDAP | Attribute<br/>in Active Directory | Description |
 | :--- | :--- | :--- |
-| `uid` | `sAMAccountName` | Podstawowy unikalny identyfikator użytkownika, często używany jako nazwa logowania. |
-| `entryDistinguishedName` | `distinguishedName` | Pełna ścieżka DN obiektu w katalogu AD. |
-| `jpegPhoto` | `thumbnailPhoto` | Miniatura zdjęcia użytkownika (binarne). |
-| `unicodePwd` | `userPassword` | Hasło użytkownika (atrybut systemowy, rzadko używany bezpośrednio). |
-| `shadowExpire` | `accountExpires` | Data i czas wygaśnięcia konta użytkownika. |
-| `shadowLastChange` | `pwdLastSet` | Data i czas ostatniej zmiany hasła. |
-| `entryUUID` | `objectGUID` | Unikalny identyfikator obiektu (GUID), binarny w AD, UUID string w OpenLDAP. |
-| `objectSid` | `objectSid` | Identyfikator bezpieczeństwa (SID) obiektu w AD (binarny). |
-| `uniqueMember` | `member` | Członek grupy (używane w grupach OpenLDAP, odpowiednik "member" w AD). |
-| `cn` | `cn` | Nazwa pospolita/wspólna (Common Name). |
-| `givenName` | `givenName` | Imię użytkownika. |
-| `sn` | `sn` | Nazwisko użytkownika (Surname). |
-| `displayName` | `displayName` | Wyświetlana nazwa użytkownika. |
-| `mail` | `mail` | Adres e-mail użytkownika. |
-| `telephoneNumber` | `telephoneNumber` | Numer telefonu stacjonarnego. |
-| `mobile` | `mobile` | Numer telefonu komórkowego. |
-| `description` | `description` | Opis obiektu. |
-| `physicalDeliveryOfficeName` | `physicalDeliveryOfficeName` | Nazwa biura/lokalizacji fizycznej. |
-| `title` | `title` | Tytuł stanowiska. |
-| `company` | `company` | Nazwa firmy. |
-| `memberOf` | `memberOf` | Grupy, do których należy obiekt (nieprzekazywalne, wymaga synchronizacji). |
-| `name` | `name` | Nazwa obiektu (identyczna z CN dla większości obiektów). |
-| `preferredLanguage` | `preferredLanguage` | Preferowany język użytkownika. |
-| `generationQualifier` | `generationQualifier` | Kwalifikator pokoleniowy (np. Jr., Sr., III). |
-| `personalTitle` | `personalTitle` | Osobisty tytuł/forma zwracania się (np. Dr., Mr.). |
-| `employeeID` | `employeeID` | Identyfikator pracownika. |
-| `l` | `l` | Miasto (Locality). |
-| `c` | `c` | Kraj (Country). |
-| `department` | `department` | Dział, do którego należy użytkownik. |
-| `streetAddress` | `streetAddress` | Adres ulicy. |
+| `uid` | `sAMAccountName` | The primary unique user identifier, often used as the login name. |
+| `entryDistinguishedName` | `distinguishedName` | The full DN path of the object in the AD directory. |
+| `jpegPhoto` | `thumbnailPhoto` | Thumbnail of the user's photo (binary). |
+| `unicodePwd` | `userPassword` | User password (system attribute, rarely used directly). |
+| `shadowExpire` | `accountExpires` | User account expiration date and time. |
+| `shadowLastChange` | `pwdLastSet` | Date and time of the last password change. |
+| `entryUUID` | `objectGUID` | Unique object identifier (GUID), binary in AD, UUID string in OpenLDAP. |
+| `objectSid` | `objectSid` | Security identifier (SID) of the object in AD (binary). |
+| `uniqueMember` | `member` | Group member (used in OpenLDAP groups, equivalent to "member" in AD). |
+| `cn` | `cn` | Common Name (Common Name). |
+| `givenName` | `givenName` | User's First Name. |
+| `sn` | `sn` | User's Surname (Surname). |
+| `displayName` | `displayName` | User's Display Name. |
+| `mail` | `mail` | User's Email Address. |
+| `telephoneNumber` | `telephoneNumber` | Landline Phone Number. |
+| `mobile` | `mobile` | Mobile Phone Number. |
+| `description` | `description` | Object Description. |
+| `physicalDeliveryOfficeName` | `physicalDeliveryOfficeName` | Office/Physical Location Name. |
+| `title` | `title` | Job Title. |
+| `company` | `company` | Company Name. |
+| `memberOf` | `memberOf` | The groups to which the object belongs (not transferable, requires synchronization). |
+| `name` | `name` | The object name (identical to the CN for most objects). |
+| `preferredLanguage` | `preferredLanguage` | The user's preferred language. |
+| `generationQualifier` | `generationQualifier` | Generation qualifier (e.g., Jr., Sr., III). |
+| `personalTitle` | `personalTitle` | Personal title/form of address (e.g., Dr., Mr.). |
+| `employeeID` | `employeeID` | The employee ID. |
+| `l` | `l` | City (Locality). |
+| `c` | `c` | Country (Country). |
+| `department` | `department` | The department to which the user belongs. |
+| `streetAddress` | `streetAddress` | Street address. |
 
-W poniższej tabeli znajdziemy mapowanie klas:
+The table below shows the class mapping:
 
-| Klasa obiektu<br/>w OpenLDAP | Klasa obiektu<br/>w Active Directory | Opis |
+| Object Class<br/>in OpenLDAP | Object Class<br/>in Active Directory | Description |
 | :--- | :--- | :--- |
-| `inetOrgPerson` | `organizationalPerson` | Klasa obiektów dla osób w organizacjach. |
-| `aDPerson` | `user` | Klasa obiektów dla użytkowników AD. |
-| `groupOfUniqueNames` | `group` | Klasa obiektów dla grup (często z unikalnymi członkami). |
-| `domain` | `CONTAINER` | Klasa obiektów reprezentująca domenę lub kontener. |
+| `inetOrgPerson` | `organizationalPerson` | Object class for people in organizations. |
+| `aDPerson` | `user` | Object class for AD users. |
+| `groupOfUniqueNames` | `group` | Object class for groups (often with unique members). |
+| `domain` | `CONTAINER` | Object class representing a domain or container. |
 
 ---
 
-Według **Gemini** (Google), 2025, mapowanie atrybutów o tych samych nazwach ma na celu przede wszystkim normalizację i kontrolę schematu:
+According to **Gemini** (Google), 2025, mapping attributes with the same names is primarily for schema normalization and control:
 
-**Sens mapowania atrybutów o tych samych nazwach**
+**The purpose of mapping attributes with the same names**
 
-Mapowanie atrybutów o identycznych nazwach w konfiguracji OpenLDAP, na przykład `olcDbMap: attribute cn cn`, może wydawać się zbędne, ale jest kluczowe dla prawidłowego działania i kontroli serwera proxy. Chodzi o formalne i jawne zadeklarowanie tego, jak OpenLDAP ma traktować atrybuty pochodzące ze zdalnego źródła, jakim jest Active Directory.
+Mapping attributes with identical names in the OpenLDAP configuration, for example, `olcDbMap: attribute cn cn`, may seem unnecessary, but it is crucial for the correct operation and control of the proxy server. The idea is to formally and explicitly declare how OpenLDAP should treat attributes originating from a remote source, such as Active Directory.
 
-**Główne powody mapowania atrybutów**
+**Main reasons for mapping attributes**
 
-* **Normalizacja schematu:** Nawet jeśli nazwy atrybutów są takie same, jak `cn`, ich definicje w schemacie OpenLDAP i Active Directory mogą się różnić. Jawne mapowanie wymusza na OpenLDAP, aby używał **własnych definicji schematu**, a wartość atrybutu pobierał z odpowiedniego pola w AD. Zapewnia to spójność i zapobiega błędom.
-* **Wymuszenie widoczności:** Taka konfiguracja jest formą kontroli dostępu. Tylko atrybuty, które są jawnie zmapowane, będą widoczne dla klienta LDAP. Jest to sposób na filtrowanie atrybutów i ograniczenie dostępu do danych, które nie są potrzebne.
-* **Fundament pod zaawansowane operacje:** Jawne mapowanie jest koniecznym pierwszym krokiem, jeśli w przyszłości planujesz użyć bardziej zaawansowanych modułów, takich jak `slapo-rwm`, do transformacji wartości atrybutów. W ten sposób serwer wie, że atrybut `entryUUID` ma pobierać wartość z `objectGUID`, a dopiero na tej podstawie można próbować przeprowadzić dalsze operacje.
+* **Schema normalization:** Even if attribute names are the same as `cn`, their definitions in the OpenLDAP and Active Directory schemas may differ. Explicit mapping forces OpenLDAP to use its own schema definitions** and retrieve the attribute value from the appropriate field in AD. This ensures consistency and prevents errors.
+* **Enforcing visibility:** This configuration is a form of access control. Only attributes that are explicitly mapped will be visible to the LDAP client. This is a way to filter attributes and restrict access to unnecessary data.
+* **A foundation for advanced operations:** Explicit mapping is a necessary first step if you plan to use more advanced modules, such as `slapo-rwm`, to transform attribute values in the future. This way, the server knows that the `entryUUID` attribute should retrieve the value from `objectGUID`, and only then can further operations be performed.
 
-Podsumowując, mapowanie atrybutów o tych samych nazwach to świadoma deklaracja, która zapewnia, że dane są przetwarzane i prezentowane zgodnie z oczekiwaniami, niezależnie od różnic w definicjach schematów.
-
----
-
-### 3.2. Uzasadnienie mapowań atrybutów
-
-Mapowanie atrybutów między OpenLDAP a Active Directory ma na celu normalizację nazw, dostosowanie schematów oraz ułatwienie integracji. Poniżej znajduje się uzasadnienie dla kluczowych mapowań.
-
-* **`uid` <-> `sAMAccountName`**: To mapowanie umożliwia używanie popularnego w systemach Linux/UNIX atrybutu **`uid`** (Username Identifier) do identyfikacji i autentykacji. Jest on mapowany na **`sAMAccountName`**, czyli unikalną nazwę logowania w Active Directory.
-* **`entryDistinguishedName` <-> `distinguishedName`**: Zapewnia, że w OpenLDAP klienci widzą pełną, kanoniczną ścieżkę DN obiektu, zgodną z definicją w Active Directory.
-* **`jpegPhoto` <-> `thumbnailPhoto`**: Konwertuje specyficzny dla AD atrybut miniatury zdjęcia (**`thumbnailPhoto`**) na bardziej ogólny atrybut **`jpegPhoto`** używany w standardzie LDAP.
-* **`unicodePwd` <-> `userPassword`**: Mapuje atrybut hasła z AD na standardowy atrybut **`userPassword`**. Należy pamiętać, że to mapowanie jest tylko do celów autentykacji i nie ujawnia surowego hasła.
-* **`shadowExpire` <-> `accountExpires`**: Umożliwia pobieranie daty wygaśnięcia konta w standardowym dla OpenLDAP formacie **`shadowExpire`**, mapując ją na odpowiednik w AD.
-* **`shadowLastChange` <-> `pwdLastSet`**: Pozwala na monitorowanie daty ostatniej zmiany hasła za pomocą standardowego atrybutu **`shadowLastChange`**, który jest mapowany na **`pwdLastSet`** z AD.
-* **`entryUUID` <-> `objectGUID`**: To mapowanie jest kluczowe dla unikalnej identyfikacji obiektów. Mapuje binarny, unikalny identyfikator obiektu z AD (**`objectGUID`**) na atrybut **`entryUUID`**, który w świecie OpenLDAP jest standardowym, stringowym identyfikatorem wpisu.
-* **`objectSid` <-> `objectSid`**: Mapowanie to zapewnia, że atrybut **`objectSid`**, czyli unikalny identyfikator bezpieczeństwa w AD, jest widoczny i dostępny dla klientów OpenLDAP pod swoją oryginalną nazwą.
-* **`uniqueMember` <-> `member`**: Umożliwia poprawne mapowanie członków grupy. Atrybut **`member`** w AD jest mapowany na **`uniqueMember`**, co jest zgodne ze schematem `groupOfUniqueNames` w OpenLDAP.
-
-
-### 3.3. Obsługa GUID/SID
-
-Atrybuty `objectGUID` i `objectSid` są atrybutami binarnymi specyficznymi dla Active Directory. Na razie nie udało się rozwiązać problemu prawidłowego mapowania pola `objectGUID` (AD) do `entryUIID` (OpenLDAP). Otworzyłem wątek [objectGUID to entryUUID mapping in Openldap proxy with AD](https://serverfault.com/questions/1190133/objectguid-to-entryuuid-mapping-in-openldap-proxy-with-ad) - zobaczymy może komuś uda się rozwiązać problem. 
+In summary, mapping attributes with the same names is a conscious declaration that ensures that data is processed and presented as expected, regardless of differences in schema definitions.
 
 ---
 
-## 4. Uwierzytelnianie i autoryzacja
+### 3.2. Attribute Mapping Rationale
+
+Attribute mapping between OpenLDAP and Active Directory is intended to normalize names, align schemas, and facilitate integration. The rationale for key mappings is provided below.
+
+* **`uid` <-> `sAMAccountName`**: This mapping enables the use of the **`uid`** (Username Identifier) attribute, common in Linux/UNIX systems, for identification and authentication. It maps to **`sAMAccountName`**, the unique login name in Active Directory.
+* **`entryDistinguishedName` <-> `distinguishedName`**: Ensures that OpenLDAP clients see the full, canonical DN path of an object, as defined in Active Directory. * **`jpegPhoto` <-> `thumbnailPhoto`**: Converts the AD-specific thumbnail photo attribute (**`thumbnailPhoto`**) to the more generic **`jpegPhoto`** attribute used in the LDAP standard.
+* **`unicodePwd` <-> `userPassword`**: Maps the AD password attribute to the standard **`userPassword`** attribute. Note that this mapping is for authentication purposes only and does not reveal the raw password.
+* **`shadowExpire` <-> `accountExpires`**: Allows retrieving the account expiration date in the standard OpenLDAP **`shadowExpire`** format, mapping it to the AD equivalent. * **`shadowLastChange` <-> `pwdLastSet`**: Allows monitoring the last password change date using the standard **`shadowLastChange`** attribute, which maps to **`pwdLastSet`** from AD.
+* **`entryUUID` <-> `objectGUID`**: This mapping is crucial for uniquely identifying objects. It maps the binary, unique object identifier from AD (**`objectGUID`**) to the **`entryUUID`** attribute, which in the OpenLDAP world is the standard, string-based entry identifier.
+* **`objectSid` <-> `objectSid`**: This mapping ensures that the **`objectSid`** attribute, the unique security identifier in AD, is visible and accessible to OpenLDAP clients under its original name.
+* **`uniqueMember` <-> `member`**: Allows for correct mapping of group members. The **`member`** attribute in AD maps to **`uniqueMember`**, which is consistent with the 'groupOfUniqueNames` schema in OpenLDAP.
+
+### 3.3. GUID/SID Support
+
+The 'objectGUID` and 'objectSid` attributes are binary attributes specific to Active Directory. We haven't yet been able to resolve the issue of correctly mapping the 'objectGUID` field (AD) to the 'entryUIID` field (OpenLDAP).' I've started a thread on [objectGUID to entryUUID mapping in OpenLDAP proxy with AD](https://serverfault.com/questions/1190133/objectguid-to-entryUUID-mapping-in-openldap-proxy-with-AD) - we'll see if someone can solve the problem.
+
+## 4. Authentication and Authorization
 
 ### 4.1. ACL (Access Control Lists) - `olcAccess`
 
-Dokładna konfiguracja ACL jest kluczowa dla bezpieczeństwa. Kontener uruchamia i inicjalizuje z poniższymi definicjami pola `olcAccess`. Dla bazy lokalnej `mdb` oraz `meta` predefiniowane zostały analogiczne uprawnienia.
+Precise ACL configuration is crucial for security. The container starts and initializes with the following `olcAccess` field definitions. Similar permissions have been predefined for the local `mdb` and `meta` databases.
 
-Wyszczególniono następujące zbiory uprawnień:
+The following sets of permissions are specified:
 
-* Dostęp do atrybutu hasła w celu logowania/zmiany
+* Access to the password attribute for login/change purposes
 
 ```ldif
 olcAccess: to attrs=userPassword,sambaNTPassword by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" write by dn.children="ou=Technical,${LDAP_LOCAL_OLC_SUFFIX}" read by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" write by dn.children="ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}" read by self write by anonymous auth by * none
 ```
 
-* Dostęp do atrybutu historii haseł
+* Access to the password history attribute
 
 ```ldif
 olcAccess: to attrs=sambaPasswordHistory,sambaPwdLastSet,shadowLastChange by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" write by dn.children="ou=Technical,${LDAP_LOCAL_OLC_SUFFIX}" read by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" write by dn.children="ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}" read by self auth by self write by * none
 ```
 
-* Dostęp do atrybutu za pomocą klucza Kerberos
+* Accessing an attribute using a Kerberos key
 
 ```ldif
 olcAccess: to attrs=krbPrincipalKey by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn.exact="uid=kdc-service,${LDAP_LOCAL_OLC_SUFFIX}" read by dn.exact="uid=kadmin-service,${LDAP_LOCAL_OLC_SUFFIX}" write by dn.exact="uid=kdc-service,ou=local,${LDAP_BASED_OLC_SUFFIX}" read by dn.exact="uid=kadmin-service,ou=local,${LDAP_BASED_OLC_SUFFIX}" write by self auth by self write by * none
 ```
 
-* Dostęp do lokalnej gałęzi Kerberos 
+* Access to the local Kerberos branch
 
 ```ldif
 olcAccess: to dn.subtree="cn=Kerberos,${LDAP_LOCAL_OLC_SUFFIX}" by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn.exact="uid=kdc-service,${LDAP_LOCAL_OLC_SUFFIX}" read by dn.exact="uid=kadmin-service,${LDAP_LOCAL_OLC_SUFFIX}" write by * none
 ```
 
-* Dostęp do lokalnego `""` bazy danych. Reguła `* read` dla `dn.base=""` jest bezpieczna i często stanowi standardową praktykę. Te informacje nie ujawniają żadnych danych użytkownika ani jego struktury. Służą jedynie do umożliwienia aplikacjom klienckim „poznania” serwera i poznania sposobu komunikacji z nim oraz miejsca wyszukiwania danych.Umożliwia to anonimowy odczyt metadanych serwera LDAP, takich jak:
-  * `namingContexts`: Dostarcza informacji o dostępnych bazach danych (np. `dc=docker,dc=openldap`).
-  * `supportedLDAPVersion`: Wersje protokołu LDAP.
-  * `supportedSASLMechanisms`: Obsługiwane mechanizmy uwierzytelniania.
-  * `subschemasubentry`: Nazwa wyróżniająca poddrzewa schematu, która jest kluczowa dla aplikacji do zarządzania schematami.
+* Accessing a local `""` database. The `* read` rule for `dn.base=""` is safe and often standard practice. This information does not reveal any user data or its structure. It is used only to allow client applications to "learn" the server and learn how to communicate with it and where to find data. This allows anonymous reading of LDAP server metadata, such as:
+* `namingContexts`: Provides information about available databases (e.g., `dc=docker,dc=openldap`).
+* `supportedLDAPVersion`: LDAP protocol versions.
+* `supportedSASLMechanisms`: Supported authentication mechanisms.
+* `subschemasubentry`: The distinguished name of the schema subtree, which is crucial for schema management applications.
 
 ```ldif
 olcAccess: to dn.base="" by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by * read
 ```
 
-* Dostęp do gałęzi głównej bazy danych 
+* Access to the main database branch
 
 ```ldif
 olcAccess: to dn.subtree="${LDAP_LOCAL_OLC_SUFFIX}" by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" manage by * read
 ```
 
-* Dostęp do pozostałych elementów `to *`   
+* Access to the remaining elements `to *``   
 
 ```ldif
 olcAccess: to * by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" manage by self read by self write by self auth ${LDAP_OLC_ACCESS}
 ``` 
 
-Oczywiście dostępy te można zmodyfikować używając narzędzia `ldapmodify` oraz odpowiedniego skryptu LDIF:
+Of course, these accesses can be modified using the `ldapmodify` tool and the appropriate LDIF script:
 
 ```ldif
 #########
-# Utwórz plik o nazwie 'modify_meta_acl_6.ldif' w katalogu /opt/workspace w kontenerze.
-# Sprawdź indeks {4}, może mieć inną wartość w Twoim przypadku.  
-# Przykład - dostosować do własnych potrzeb!
+# Create a file named 'modify_meta_acl_6.ldif' in the /opt/workspace directory in the container.
+# Check the index {4}, it may have a different value in your case.
+# Example - adapt to your needs!
 #########
 dn: olcDatabase={4}meta,cn=config
 changetype: modify
@@ -522,60 +502,76 @@ olcAccess: {2}to dn.subtree="ou=Admins,ou=local,dc=scisoftware,dc=pl" by users r
 olcAccess: {3}to * by self write by users read by anonymous auth by * none
 ```
 
-Zaloguj się do konsoli kontenera i wydaj polecenie linii komend w kontenerze:
+Log in to the container console and issue the following command line command in the container:
 
 ```bash
 ldapmodify -Y EXTERNAL -H ldapi:/// -f /opt/workspace/modify_meta_acl_6.ldif
 ```
 
-### 4.2. Rodzaje uwierzytelniania
+### 4.2. Authentication Types
 
-OpenLDAP proxy obsługuje różne metody uwierzytelniania:
+The OpenLDAP proxy supports various authentication methods:
 
-- **Simple Bind**: Uwierzytelnianie za pomocą nazwy użytkownika (DN) i hasła. Używane w testach i wielu aplikacjach.
-- *(Opcjonalnie: GSSAPI/Kerberos, DIGEST-MD5, jeśli skonfigurowane.)*
+- **Simple Bind**: Authentication via username (DN) and password. Used for testing and many applications.
+- *(Optional: GSSAPI/Kerberos, DIGEST-MD5, if configured.)*
 
----
+## 5. Monitoring and Troubleshooting
 
-## 5. Monitorowanie i rozwiązywanie problemów
+### 5.1. OpenLDAP Logs
 
-### 5.1. Logi OpenLDAP
-* **Lokalizacja:** Logi `slapd` są zazwyczaj dostępne poprzez `journalctl -u slapd -f` (na systemach z systemd) lub w plikach systemowych (np. `/var/log/syslog`, `/var/log/daemon.log`).
-* **Poziomy logowania (`olcLogLevel`):**
-    * `none`: Brak logów (niezalecane).
-    * `stats`: Podstawowe statystyki (zalecane na produkcji).
-    * `acl`: Logowanie decyzji ACL (przydatne do debugowania uprawnień).
-    * `args`: Argumenty funkcji LDAP.
-    * `conn`: Otwieranie/zamykanie połączeń.
-    * `any` (`65535`): Wszystko (tylko do głębokiej diagnostyki, bardzo "gadatliwe").
+* **Location:** `slapd` logs are typically available via `journalctl -u slapd -f` (on systems with systemd) or in system files (e.g., `/var/log/syslog`, `/var/log/daemon.log`).
+  * **Log Levels (`olcLogLevel`):**
+  * `none`: No logs (not recommended).
+  * `stats`: Basic statistics (recommended in production).
+  * `acl`: ACL decision logging (useful for debugging permissions).
+  * `args`: LDAP function arguments.
+  * `conn`: Open/close connections.
+  * `any` (`65535`): Everything (only for deep diagnostics, very "verbose").
 
-### 5.2. Typowe problemy i rozwiązania
-* **"Invalid GUID" w Apache Directory Studio:** Problem wizualny specyficzny dla Studio, gdy łączy się przez proxy. Wartość jest poprawna w `ldapsearch`. Rozwiązanie: Załadowanie schematów AD (`microsoftad.ldif`) oraz próba reguł `rwm-rewriteRule` (choć to drugie nie zawsze pomagało dla Studio).
-* **Błędy autoryzacji:** Sprawdź `olcAccess` w `cn=config` i logi `slapd` (`olcLogLevel: acl`).
-* **Problemy z połączeniem do backendu:** Sprawdź `olcDbURI`, `olcDbBindDN`, `olcDbBindPW` w konfiguracji `olcMetaSub` oraz dostępność serwera docelowego (firewall, sieć).
+### 5.2. Common Problems and Solutions
 
-### 5.3. Narzędzia diagnostyczne
-* `ldapsearch`: Do wykonywania zapytań i weryfikacji danych.
-* `ldapmodify`, `ldapadd`, `ldapdelete`: Do modyfikacji konfiguracji i danych.
+* **"Invalid GUID" in Apache Directory Studio:** A visual issue specific to Studio when connecting through a proxy. The value is correct in `ldapsearch`. Solution: Loading the AD schemas (`microsoftad.ldif`) and trying `rwm-rewriteRule` rules (although the latter didn't always help with Studio).
 
-### 5.4. Procedury restartu/przeładowania
-* **Restart usługi slapd:** `systemctl restart slapd` (zalecane po dużych zmianach konfiguracyjnych).
+* **Authorization Errors:** Check `olcAccess` in `cn=config` and `slapd` logs (`olcLogLevel: acl`).
 
----
+* **Backend Connection Problems:** Check `olcDbURI`, `olcDbBindDN`, `olcDbBindPW` in the `olcMetaSub` configuration, and the availability of the target server (firewall, network).
 
-## 6. Kopia zapasowa i odtwarzanie
+### 5.3. Diagnostic Tools
 
-### 6.1. Procedury backupu
-* **Konfiguracja `cn=config`:**
-    ```bash
-    mkdir -p /var/backups/openldap_config_$(date +%Y%m%d%H%M%S)
-    ldapsearch -x -H ldapi:/// -b "cn=config" -LLL > /var/backups/openldap_config_$(date +%Y%m%d%H%M%S)/cn_config_backup.ldif
-    ```
-* **Lokalna baza MDB (jeśli używasz):**
-    ```bash
-    /usr/sbin/slapcat -l /var/backups/openldap_mdb_$(date +%Y%m%d%H%M%S)/mdb_backup.ldif -b "dc=scisoftware,dc=pl"
-    ```
-    *(Dostosuj bazę DN do swojej konfiguracji MDB.)*
+* `ldapsearch`: For querying and verifying data.
+* `ldapmodify`, `ldapadd`, `ldapdelete`: For modifying configuration and data.
 
-### 6.2. Procedury odtwarzania
-*(W razie potrzeby, opis kroków odtwarzania z plików LDIF, np. `slapadd` dla bazy MDB, `ldapadd` dla `cn=config` po świeżej instalacji.)*
+### 5.4. Restart/Reload Procedures
+
+* **Restart the slapd service:** `systemctl restart slapd` (recommended after major configuration changes).
+
+## 6. Backup and Restore
+
+### 6.1. Backup Procedures
+
+* **Configuration of `cn=config`:**
+
+```bash
+mkdir -p /var/backups/openldap_config_$(date +%Y%m%d%H%M%S)
+ldapsearch -x -H ldapi:/// -b "cn=config" -LLL > /var/backups/openldap_config_$(date +%Y%m%d%H%M%S)/cn_config_backup.ldif
+```
+
+* **Local `mdb` database (if using):**
+
+```bash
+/usr/sbin/slapcat -l /var/backups/openldap_mdb_$(date +%Y%m%d%H%M%S)/mdb_backup.ldif -b "dc=scisoftware,dc=pl"
+```
+*(Adjust the DN database to your `mdb` configuration.)*
+
+### 6.2. Restoration Procedures
+
+*(If necessary, description of the steps for restoring from LDIF files, e.g., `slapadd` for the MDB database, `ldapadd` for `cn=config` after a fresh install.)*
+
+## Sources
+
+* [Use LDAP Proxy to integrate multiple LDAP servers](https://docs.microfocus.com/doc/425/9.80/configureldapproxy)
+* [OpenLDAP meta backend OLC configuration](https://serverfault.com/questions/866542/openldap-meta-backend-olc-configuration)
+* [OpenLDAP Online Configuration Reference Mapping](https://tylersguides.com/guides/openldap-online-configuration-reference/)
+* [Combining OpenLDAP and Active Directory via OpenLDAP meta backend](https://serverfault.com/questions/1152227/combining-openldap-and-active-directory-via-openldap-meta-backend/1190129?noredirect=1#comment1542537_1190129)
+*Answers provided by Gemini (Google), 2025
+
