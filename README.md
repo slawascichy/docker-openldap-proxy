@@ -31,6 +31,8 @@ Projekt serwera OpenLDAP w trybie proxy ma na celu unifikację dostępu do róż
 
 ## 2. Uruchomienie serwera OpenLDAP Proxy
 
+Dostępny jest [obraz Docker'a](https://hub.docker.com/r/scisoftware/openldap-proxy/tags).
+
 Kontener `openldap-proxy` z serwerem OpenLDAP uruchamiamy za jako kompozycja Docker, której definicja znajduje się w pliku `docker-compose.yml` albo bezpośrednio z linii komend. Poniżej przykłady poleceń z linii komend:
 
 * Przykładowe uruchomienie kontenera jako kompozycja:
@@ -231,7 +233,10 @@ Poniżej znajduje się lista kluczowych plików LDIF użytych do konfiguracji se
 
 #### 2.6.1. Schemat atrybutów CSZU
 
-**CSZU** (polski skrót od Centralny System Zarządzania Użytkownikami) - to autorski system repozytorium użytkowników. Załadowana schema zawiera definicje klas obiektów o nazwach `cszuAttrs`, `cszuPrivs`, `cszuUser` and `cszuGroup`:
+**CSZU** (polski skrót od Centralny System Zarządzania Użytkownikami) - to autorski system repozytorium użytkowników. Załadowana schema zawiera definicje klas obiektów o nazwach `cszuAttrs`, `cszuPrivs`, `cszuUser` oraz `cszuGroup`:
+
+<details>
+<summary>schemas\005-cszu.ldif</summary>
 
 ```text
 #
@@ -280,9 +285,14 @@ olcObjectClasses: ( 1.3.6.1.4.1.2021.3.1.1 NAME 'cszuUser' DESC 'Attributes used
 olcObjectClasses: ( 1.3.6.1.4.1.2021.3.2.1 NAME 'cszuGroup' DESC 'Attributes used by CSZU for group entries' SUP cszuAttrs AUXILIARY MUST ( cn $ managerGroup ) MAY ( mail $ name $ displayName $ description $ manager $ member $ memberOf))
 ```
 
+</details>
+
 #### 2.6.2. Schemat atrybutów AD
 
 Schemat pozwalający na reprezentacje w ramach serwera OpenLDAP atrybutów o nazwach pochodzących AD. Zawiera definicje klas obiektów o nazwach `aDPerson`, `groupOfMembers`, `team`, `container`, `group` oraz `user`:
+
+<details>
+<summary>schemas\002-ADPerson.ldif</summary>
 
 ```text
 #
@@ -324,6 +334,7 @@ olcObjectClasses: ( 1.2.840.113556.1.3.23 NAME 'container' SUP top STRUCTURAL MU
 olcObjectClasses: ( 1.2.840.113556.1.5.8 NAME 'group' SUP top STRUCTURAL MUST (cn $ sAMAccountName ) )
 olcObjectClasses: ( 1.2.840.113556.1.5.9 NAME 'user' SUP inetOrgPerson STRUCTURAL MUST ( uid $ sAMAccountName ) )
 ```
+</details>
 
 ### 2.7 Predefiniowane wpisy w lokalnej bazie
 
@@ -347,7 +358,7 @@ Podczas pierwszego uruchomienia usługi zawartość lokalnej bazy danych jest in
   - `uid=mrcmanager,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - przykładowy użytkownik z uprawnieniami administratora systemu [Mercury 3.0 (HgDB)](https:///hgdb.org); hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno zostać zmienione w środowiskach produkcyjnych.
   - `uid=mrcuser,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - przykładowy użytkownik z uprawnieniami użytkownika systemu [Mercury 3.0 (HgDB)](https:///hgdb.org); hasło użytkownika należy zdefiniować w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i zmienić w środowiskach produkcyjnych.
 
-![Przykład predefiniowanego drzewa lokalnej bazy danych](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/sample-predefined-tree-by-apache-dir-studio-2.png)
+![Przykład predefiniowanego drzewa lokalnej bazy danych](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/sample-predefined-tree-by-apache-dir-studio.png)
 
 ---
 
@@ -357,44 +368,151 @@ Mapowanie atrybutów odbywa się za pomocą atrybutu `olcDbMap` w konfiguracji k
 
 ### 3.1. Tabela predefiniowanych mapowań
 
-Poniżej tabela predefiniowanych mapowań dla połączeń do baz danych AD. Tabela została opracowana na podstawie najczęściej stosowanych w różnych systemach IT. 
+Poniżej tabela predefiniowanych mapowań dla połączeń do baz danych AD. Poniższa tabela zawiera listę mapowanych atrybutów i została opracowana na podstawie najczęściej stosowanych mapowaniach w różnych systemach IT. 
 
-| Nazwa w OpenLDAP (klient) | Nazwa w źródle (AD) | Uwagi |
-| :----------------------- | :--------------------------- | :---- |
-| `uid`| `sAMAccountName` | Mapowanie UID z `sAMAccountName` nazwy użytkownika w AD. |
-| `jpegPhoto` | `thumbnailPhoto | Mapowanie miniatury AD na standardowe zdjęcie LDAP |
-| `cn` | `cn | Standardowe mapowanie |
-| `givenName`| `givenName` | |
-| `sn` | `sn` | |
-| `displayName` | `displayName` | |
-| `mail` | `mail` | |
-| `objectGUID` | `objectGUID` | Wymaga schematu AD |
-| `objectSid` | `objectSid` | Wymaga schematu AD |
-| `preferredLanguage` | `preferredLanguage` | |
-| `objectclass: inetOrgPerson` | `objectclass: user`      | Mapowanie klas obiektów |
-| `objectclass: groupOfUniqueNames` | `objectclass: group` | Mapowanie klas obiektów |
+| Atrybut<br/>w OpenLDAP | Atrybut<br/>w Active Directory | Opis |
+| :--- | :--- | :--- |
+| `uid` | `sAMAccountName` | Podstawowy unikalny identyfikator użytkownika, często używany jako nazwa logowania. |
+| `entryDistinguishedName` | `distinguishedName` | Pełna ścieżka DN obiektu w katalogu AD. |
+| `jpegPhoto` | `thumbnailPhoto` | Miniatura zdjęcia użytkownika (binarne). |
+| `unicodePwd` | `userPassword` | Hasło użytkownika (atrybut systemowy, rzadko używany bezpośrednio). |
+| `shadowExpire` | `accountExpires` | Data i czas wygaśnięcia konta użytkownika. |
+| `shadowLastChange` | `pwdLastSet` | Data i czas ostatniej zmiany hasła. |
+| `entryUUID` | `objectGUID` | Unikalny identyfikator obiektu (GUID), binarny w AD, UUID string w OpenLDAP. |
+| `objectSid` | `objectSid` | Identyfikator bezpieczeństwa (SID) obiektu w AD (binarny). |
+| `uniqueMember` | `member` | Członek grupy (używane w grupach OpenLDAP, odpowiednik "member" w AD). |
+| `cn` | `cn` | Nazwa pospolita/wspólna (Common Name). |
+| `givenName` | `givenName` | Imię użytkownika. |
+| `sn` | `sn` | Nazwisko użytkownika (Surname). |
+| `displayName` | `displayName` | Wyświetlana nazwa użytkownika. |
+| `mail` | `mail` | Adres e-mail użytkownika. |
+| `telephoneNumber` | `telephoneNumber` | Numer telefonu stacjonarnego. |
+| `mobile` | `mobile` | Numer telefonu komórkowego. |
+| `description` | `description` | Opis obiektu. |
+| `physicalDeliveryOfficeName` | `physicalDeliveryOfficeName` | Nazwa biura/lokalizacji fizycznej. |
+| `title` | `title` | Tytuł stanowiska. |
+| `company` | `company` | Nazwa firmy. |
+| `memberOf` | `memberOf` | Grupy, do których należy obiekt (nieprzekazywalne, wymaga synchronizacji). |
+| `name` | `name` | Nazwa obiektu (identyczna z CN dla większości obiektów). |
+| `preferredLanguage` | `preferredLanguage` | Preferowany język użytkownika. |
+| `generationQualifier` | `generationQualifier` | Kwalifikator pokoleniowy (np. Jr., Sr., III). |
+| `personalTitle` | `personalTitle` | Osobisty tytuł/forma zwracania się (np. Dr., Mr.). |
+| `employeeID` | `employeeID` | Identyfikator pracownika. |
+| `l` | `l` | Miasto (Locality). |
+| `c` | `c` | Kraj (Country). |
+| `department` | `department` | Dział, do którego należy użytkownik. |
+| `streetAddress` | `streetAddress` | Adres ulicy. |
 
-### 3.2. Uzasadnienie mapowań
-* `uid` <-> `userPrincipalName`: Umożliwia używanie atrybutu `uid` (popularnego w systemach UNIX/Linux) do autentykacji i identyfikacji, mapując go na unikalny `userPrincipalName` z AD.
-* `jpegPhoto` <-> `thumbnailPhoto`: Konwertuje specyficzny dla AD atrybut miniatury na bardziej ogólny atrybut `jpegPhoto` używany w standardzie LDAP.
+W poniższej tabeli znajdziemy mapowanie klas:
+
+| Klasa obiektu<br/>w OpenLDAP | Klasa obiektu<br/>w Active Directory | Opis |
+| :--- | :--- | :--- |
+| `inetOrgPerson` | `organizationalPerson` | Klasa obiektów dla osób w organizacjach. |
+| `aDPerson` | `user` | Klasa obiektów dla użytkowników AD. |
+| `groupOfUniqueNames` | `group` | Klasa obiektów dla grup (często z unikalnymi członkami). |
+| `domain` | `CONTAINER` | Klasa obiektów reprezentująca domenę lub kontener. |
+
+---
+
+Według **Gemini** (Google), 2025, mapowanie atrybutów o tych samych nazwach ma na celu przede wszystkim normalizację i kontrolę schematu:
+
+**Sens mapowania atrybutów o tych samych nazwach**
+
+Mapowanie atrybutów o identycznych nazwach w konfiguracji OpenLDAP, na przykład `olcDbMap: attribute cn cn`, może wydawać się zbędne, ale jest kluczowe dla prawidłowego działania i kontroli serwera proxy. Chodzi o formalne i jawne zadeklarowanie tego, jak OpenLDAP ma traktować atrybuty pochodzące ze zdalnego źródła, jakim jest Active Directory.
+
+**Główne powody mapowania atrybutów**
+
+* **Normalizacja schematu:** Nawet jeśli nazwy atrybutów są takie same, jak `cn`, ich definicje w schemacie OpenLDAP i Active Directory mogą się różnić. Jawne mapowanie wymusza na OpenLDAP, aby używał **własnych definicji schematu**, a wartość atrybutu pobierał z odpowiedniego pola w AD. Zapewnia to spójność i zapobiega błędom.
+* **Wymuszenie widoczności:** Taka konfiguracja jest formą kontroli dostępu. Tylko atrybuty, które są jawnie zmapowane, będą widoczne dla klienta LDAP. Jest to sposób na filtrowanie atrybutów i ograniczenie dostępu do danych, które nie są potrzebne.
+* **Fundament pod zaawansowane operacje:** Jawne mapowanie jest koniecznym pierwszym krokiem, jeśli w przyszłości planujesz użyć bardziej zaawansowanych modułów, takich jak `slapo-rwm`, do transformacji wartości atrybutów. W ten sposób serwer wie, że atrybut `entryUUID` ma pobierać wartość z `objectGUID`, a dopiero na tej podstawie można próbować przeprowadzić dalsze operacje.
+
+Podsumowując, mapowanie atrybutów o tych samych nazwach to świadoma deklaracja, która zapewnia, że dane są przetwarzane i prezentowane zgodnie z oczekiwaniami, niezależnie od różnic w definicjach schematów.
+
+---
+
+### 3.2. Uzasadnienie mapowań atrybutów
+
+Mapowanie atrybutów między OpenLDAP a Active Directory ma na celu normalizację nazw, dostosowanie schematów oraz ułatwienie integracji. Poniżej znajduje się uzasadnienie dla kluczowych mapowań.
+
+* **`uid` <-> `sAMAccountName`**: To mapowanie umożliwia używanie popularnego w systemach Linux/UNIX atrybutu **`uid`** (Username Identifier) do identyfikacji i autentykacji. Jest on mapowany na **`sAMAccountName`**, czyli unikalną nazwę logowania w Active Directory.
+* **`entryDistinguishedName` <-> `distinguishedName`**: Zapewnia, że w OpenLDAP klienci widzą pełną, kanoniczną ścieżkę DN obiektu, zgodną z definicją w Active Directory.
+* **`jpegPhoto` <-> `thumbnailPhoto`**: Konwertuje specyficzny dla AD atrybut miniatury zdjęcia (**`thumbnailPhoto`**) na bardziej ogólny atrybut **`jpegPhoto`** używany w standardzie LDAP.
+* **`unicodePwd` <-> `userPassword`**: Mapuje atrybut hasła z AD na standardowy atrybut **`userPassword`**. Należy pamiętać, że to mapowanie jest tylko do celów autentykacji i nie ujawnia surowego hasła.
+* **`shadowExpire` <-> `accountExpires`**: Umożliwia pobieranie daty wygaśnięcia konta w standardowym dla OpenLDAP formacie **`shadowExpire`**, mapując ją na odpowiednik w AD.
+* **`shadowLastChange` <-> `pwdLastSet`**: Pozwala na monitorowanie daty ostatniej zmiany hasła za pomocą standardowego atrybutu **`shadowLastChange`**, który jest mapowany na **`pwdLastSet`** z AD.
+* **`entryUUID` <-> `objectGUID`**: To mapowanie jest kluczowe dla unikalnej identyfikacji obiektów. Mapuje binarny, unikalny identyfikator obiektu z AD (**`objectGUID`**) na atrybut **`entryUUID`**, który w świecie OpenLDAP jest standardowym, stringowym identyfikatorem wpisu.
+* **`objectSid` <-> `objectSid`**: Mapowanie to zapewnia, że atrybut **`objectSid`**, czyli unikalny identyfikator bezpieczeństwa w AD, jest widoczny i dostępny dla klientów OpenLDAP pod swoją oryginalną nazwą.
+* **`uniqueMember` <-> `member`**: Umożliwia poprawne mapowanie członków grupy. Atrybut **`member`** w AD jest mapowany na **`uniqueMember`**, co jest zgodne ze schematem `groupOfUniqueNames` w OpenLDAP.
+
 
 ### 3.3. Obsługa GUID/SID
-Atrybuty `objectGUID` i `objectSid` są atrybutami binarnymi specyficznymi dla Active Directory. Ich prawidłowa obsługa wymaga załadowania odpowiednich definicji schematu do OpenLDAP (`cn=microsoftad,cn=schema,cn=config`), pozyskanych z plików takich jak `microsoftad.ldif` lub `microsoftad.schema`.
+
+Atrybuty `objectGUID` i `objectSid` są atrybutami binarnymi specyficznymi dla Active Directory. Na razie nie udało się rozwiązać problemu prawidłowego mapowania pola `objectGUID` (AD) do `entryUIID` (OpenLDAP). Otworzyłem wątek [objectGUID to entryUUID mapping in Openldap proxy with AD](https://serverfault.com/questions/1190133/objectguid-to-entryuuid-mapping-in-openldap-proxy-with-ad) - zobaczymy może komuś uda się rozwiązać problem. 
 
 ---
 
 ## 4. Uwierzytelnianie i autoryzacja
 
-### 4.1. Użytkownicy do bindowania (proxy do backendów)
-* `olcDbBindDN`: Określa DN konta używanego przez OpenLDAP proxy do łączenia się z backendami.
-    * Dla AD: `CN=Administrator,CN=Users,DC=BOJANO,DC=LOCAL` (lub dedykowane konto serwisowe z minimalnymi uprawnieniami).
-    * Dla LDAP-S: `uid=admin,ou=system,dc=scisoftware,dc=pl` (przykładowo).
+### 4.1. ACL (Access Control Lists) - `olcAccess`
 
-### 4.2. ACL (Access Control Lists) - `olcAccess`
-Dokładna konfiguracja ACL jest kluczowa dla bezpieczeństwa. Przykładowe reguły:
+Dokładna konfiguracja ACL jest kluczowa dla bezpieczeństwa. Kontener uruchamia i inicjalizuje z poniższymi definicjami pola `olcAccess`. Dla bazy lokalnej `mdb` oraz `meta` predefiniowane zostały analogiczne uprawnienia.
+
+Wyszczególniono następujące zbiory uprawnień:
+
+* Dostęp do atrybutu hasła w celu logowania/zmiany
 
 ```ldif
+olcAccess: to attrs=userPassword,sambaNTPassword by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" write by dn.children="ou=Technical,${LDAP_LOCAL_OLC_SUFFIX}" read by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" write by dn.children="ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}" read by self write by anonymous auth by * none
+```
+
+* Dostęp do atrybutu historii haseł
+
+```ldif
+olcAccess: to attrs=sambaPasswordHistory,sambaPwdLastSet,shadowLastChange by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" write by dn.children="ou=Technical,${LDAP_LOCAL_OLC_SUFFIX}" read by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" write by dn.children="ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}" read by self auth by self write by * none
+```
+
+* Dostęp do atrybutu za pomocą klucza Kerberos
+
+```ldif
+olcAccess: to attrs=krbPrincipalKey by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn.exact="uid=kdc-service,${LDAP_LOCAL_OLC_SUFFIX}" read by dn.exact="uid=kadmin-service,${LDAP_LOCAL_OLC_SUFFIX}" write by dn.exact="uid=kdc-service,ou=local,${LDAP_BASED_OLC_SUFFIX}" read by dn.exact="uid=kadmin-service,ou=local,${LDAP_BASED_OLC_SUFFIX}" write by self auth by self write by * none
+```
+
+* Dostęp do lokalnej gałęzi Kerberos 
+
+```ldif
+olcAccess: to dn.subtree="cn=Kerberos,${LDAP_LOCAL_OLC_SUFFIX}" by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn.exact="uid=kdc-service,${LDAP_LOCAL_OLC_SUFFIX}" read by dn.exact="uid=kadmin-service,${LDAP_LOCAL_OLC_SUFFIX}" write by * none
+```
+
+* Dostęp do lokalnego `""` bazy danych. Reguła `* read` dla `dn.base=""` jest bezpieczna i często stanowi standardową praktykę. Te informacje nie ujawniają żadnych danych użytkownika ani jego struktury. Służą jedynie do umożliwienia aplikacjom klienckim „poznania” serwera i poznania sposobu komunikacji z nim oraz miejsca wyszukiwania danych.Umożliwia to anonimowy odczyt metadanych serwera LDAP, takich jak:
+  * `namingContexts`: Dostarcza informacji o dostępnych bazach danych (np. `dc=docker,dc=openldap`).
+  * `supportedLDAPVersion`: Wersje protokołu LDAP.
+  * `supportedSASLMechanisms`: Obsługiwane mechanizmy uwierzytelniania.
+  * `subschemasubentry`: Nazwa wyróżniająca poddrzewa schematu, która jest kluczowa dla aplikacji do zarządzania schematami.
+
+```ldif
+olcAccess: to dn.base="" by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by * read
+```
+
+* Dostęp do gałęzi głównej bazy danych 
+
+```ldif
+olcAccess: to dn.subtree="${LDAP_LOCAL_OLC_SUFFIX}" by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" manage by * read
+```
+
+* Dostęp do pozostałych elementów `to *`   
+
+```ldif
+olcAccess: to * by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" manage by self read by self write by self auth ${LDAP_OLC_ACCESS}
+``` 
+
+Oczywiście dostępy te można zmodyfikować używając narzędzia `ldapmodify` oraz odpowiedniego skryptu LDIF:
+
+```ldif
+#########
+# Utwórz plik o nazwie 'modify_meta_acl_6.ldif' w katalogu /opt/workspace w kontenerze.
+# Sprawdź indeks {4}, może mieć inną wartość w Twoim przypadku.  
 # Przykład - dostosować do własnych potrzeb!
+#########
 dn: olcDatabase={4}meta,cn=config
 changetype: modify
 add: olcAccess
@@ -403,9 +521,15 @@ olcAccess: {1}to attrs=memberOf,member,uniqueMember by self read by * read
 olcAccess: {2}to dn.subtree="ou=Admins,ou=local,dc=scisoftware,dc=pl" by users read by anonymous auth by * none
 olcAccess: {3}to * by self write by users read by anonymous auth by * none
 ```
-*(Szczegółowe wyjaśnienie każdej reguły ACL, kto może co robić i w jakim zakresie.)*
 
-### 4.3. Rodzaje uwierzytelniania
+Zaloguj się do konsoli kontenera i wydaj polecenie linii komend w kontenerze:
+
+```bash
+ldapmodify -Y EXTERNAL -H ldapi:/// -f /opt/workspace/modify_meta_acl_6.ldif
+```
+
+### 4.2. Rodzaje uwierzytelniania
+
 OpenLDAP proxy obsługuje różne metody uwierzytelniania:
 
 - **Simple Bind**: Uwierzytelnianie za pomocą nazwy użytkownika (DN) i hasła. Używane w testach i wielu aplikacjach.
@@ -433,7 +557,6 @@ OpenLDAP proxy obsługuje różne metody uwierzytelniania:
 ### 5.3. Narzędzia diagnostyczne
 * `ldapsearch`: Do wykonywania zapytań i weryfikacji danych.
 * `ldapmodify`, `ldapadd`, `ldapdelete`: Do modyfikacji konfiguracji i danych.
-* `journalctl -u slapd -f`: Do monitorowania logów `slapd` w czasie rzeczywistym.
 
 ### 5.4. Procedury restartu/przeładowania
 * **Restart usługi slapd:** `systemctl restart slapd` (zalecane po dużych zmianach konfiguracyjnych).
