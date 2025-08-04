@@ -6,13 +6,37 @@
 # olcDbMap: attribute <attribute_name_as_seen_by_the_OpenLDAP_client> <attribute_name_in_remote_source_(AD)>
 ##############################################################################
 #
-dn: olcMetaSub=${META_SUB},olcDatabase={3}meta,cn=config
+dn: olcMetaSub=${META_SUB},olcDatabase={4}meta,cn=config
 changetype: modify
 add: olcDbMap
-olcDbMap: attribute uid userPrincipalName
+olcDbMap: attribute uid sAMAccountName
 -
 add: olcDbMap
 olcDbMap: attribute entryDistinguishedName distinguishedName
+-
+add: olcDbMap
+olcDbMap: attribute jpegPhoto thumbnailPhoto
+-
+add: olcDbMap
+olcDbMap: attribute unicodePwd userPassword
+-
+add: olcDbMap
+olcDbMap: attribute shadowExpire accountExpires
+-
+add: olcDbMap
+olcDbMap: attribute shadowLastChange pwdLastSet
+#-
+#add: olcDbMap
+#olcDbMap: attribute entryUUID objectGUID
+-
+add: olcDbMap
+olcDbMap: attribute objectGUID objectGUID
+-
+add: olcDbMap
+olcDbMap: attribute objectSid objectSid
+-
+add: olcDbMap
+olcDbMap: attribute uniqueMember member
 -
 add: olcDbMap
 olcDbMap: attribute cn cn
@@ -51,22 +75,7 @@ add: olcDbMap
 olcDbMap: attribute memberOf memberOf
 -
 add: olcDbMap
-olcDbMap: attribute gidNumber primaryGroupID
--
-add: olcDbMap
-olcDbMap: attribute shadowExpire accountExpires
--
-add: olcDbMap
-olcDbMap: attribute shadowLastChange pwdLastSet
--
-add: olcDbMap
-olcDbMap: attribute sAMAccountName sAMAccountName
--
-add: olcDbMap
 olcDbMap: attribute name name
--
-add: olcDbMap
-olcDbMap: attribute jpegPhoto thumbnailPhoto
 -
 add: olcDbMap
 olcDbMap: attribute preferredLanguage preferredLanguage
@@ -93,19 +102,16 @@ add: olcDbMap
 olcDbMap: attribute streetAddress streetAddress
 -
 add: olcDbMap
-olcDbMap: attribute objectGUID objectGUID
--
-add: olcDbMap
-olcDbMap: attribute objectSid objectSid
--
-add: olcDbMap
-olcDbMap: attribute uniqueMember member
+olcDbMap: objectclass inetOrgPerson organizationalPerson
 -
 add: olcDbMap
 olcDbMap: objectclass aDPerson user
 -
 add: olcDbMap
 olcDbMap: objectclass groupOfUniqueNames group
+-
+add: olcDbMap
+olcDbMap: objectclass domain CONTAINER
 #-
 #add: olcDbMap
 #olcDbMap: attribute *
