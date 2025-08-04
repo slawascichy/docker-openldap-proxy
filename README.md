@@ -1,6 +1,6 @@
 # OpenLDAP Proxy
 
-Niniejszy dokument stanowi kompleksowy przewodnik po konfiguracji i utrzymaniu serwera OpenLDAP działającego w trybie proxy (back-meta), integrującego się z usługami katalogowymi Active Directory, lokalną bazą MDB oraz innymi źródłami LDAP.
+Niniejszy dokument stanowi kompleksowy przewodnik po konfiguracji i utrzymaniu serwera OpenLDAP działającego w trybie proxy (back-meta), integrującego się z usługami katalogowymi Active Directory, lokalną bazą `mdb` oraz innymi źródłami LDAP.
 
 ---
 
