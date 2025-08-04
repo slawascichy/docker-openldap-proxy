@@ -1,11 +1,12 @@
-# OpenLDAP with proxy
-
-OpenLDAP Software is an Open Source suite of directory software developed by the Internet community, is a implementation of the Lightweight Directory Access Protocol (LDAP).
-You can read about that product on page [https://www.openldap.org/](https://www.openldap.org/).
-
-# Dokumentacja OpenLDAP Proxy
+# OpenLDAP Proxy
 
 Niniejszy dokument stanowi kompleksowy przewodnik po konfiguracji i utrzymaniu serwera OpenLDAP działającego w trybie proxy (back-meta), integrującego się z usługami katalogowymi Active Directory, lokalną bazą MDB oraz innymi źródłami LDAP.
+
+---
+
+## O OpenLDAP
+
+Oprogramowanie OpenLDAP to pakiet oprogramowania katalogowego o otwartym kodzie źródłowym, opracowany przez społeczność internetową, stanowiący implementację protokołu LDAP (Lightweight Directory Access Protocol). Więcej informacji na temat tego produktu można znaleźć na stronie [https://www.openldap.org/](https://www.openldap.org/).
 
 ---
 
@@ -15,13 +16,16 @@ Niniejszy dokument stanowi kompleksowy przewodnik po konfiguracji i utrzymaniu s
 Projekt serwera OpenLDAP w trybie proxy ma na celu unifikację dostępu do różnych źródeł danych LDAP (takich jak Active Directory, lokalna baza MDB, inne serwery LDAP-S) dla aplikacji klienckich. Pozwala to na centralizację uwierzytelniania i autoryzacji oraz prezentację spójnego widoku katalogu, niezależnie od jego wewnętrznej struktury.
 
 ### 1.2. Diagram architektury
-*(Tutaj można wstawić prosty diagram, np. ASCII Art lub opis tekstowy, pokazujący OpenLDAP Proxy w centrum, łączące się z: AD, Lokalną bazą MDB, Innymi LDAP-ami, a do OpenLDAP Proxy łączą się Aplikacje klienckie.)*
+
+![Diagram architektury proponowanego użycia](
+https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/docker-openldap-proxy-diagram-pl.png)
 
 ### 1.3. Wersje oprogramowania
-* **OpenLDAP:** [Twoja wersja, np. 2.4.59]
-* **System operacyjny kontenera:** [Np. Debian 11 Bullseye]
-* **Kontrolery domeny AD:** [Np. Windows Server 2016]
-* **Narzędzia:** [Np. Apache Directory Studio, ldapsearch, ldapmodify]
+* **OpenLDAP:** OpenLDAP: slapd 2.6.7+dfsg-1~exp1ubuntu8.2 (Dec 9 2024 02:50:18) Ubuntu Developers `<ubuntu-devel-discuss@lists.ubuntu.com>`
+* **System operacyjny kontenera:** ubuntu:latest `org.opencontainers.image.version=24.04`
+* **Kontrolery domeny AD:** Windows Server 2016
+* **GUI Użytkownika:** phpldapadmin/phpldapadmin:latest
+* **Narzędzia:** [Apache Directory Studio](https://directory.apache.org/studio/), `ldapsearch`, `ldapadd`, `ldapmodify`, `ping`, `telnet`
 
 ---
 
@@ -106,7 +110,7 @@ Dokładna konfiguracja ACL jest kluczowa dla bezpieczeństwa. Przykładowe regu�
 
 ```ldif
 # Przykład - dostosować do własnych potrzeb!
-dn: olcDatabase={3}meta,cn=config
+dn: olcDatabase={4}meta,cn=config
 changetype: modify
 add: olcAccess
 olcAccess: {0}to attrs=userPassword,shadowLastChange by self write by anonymous auth by * none
