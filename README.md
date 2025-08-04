@@ -613,11 +613,28 @@ If you encounter errors or unexpected behavior, the following tips will help dia
 
 #### 6.4.2. Problems with binary attributes (e.g., `objectGUID`, `objectSid`)
 
-* **Binary vs. string**: Attribute values such as **`objectGUID`** and **`objectSid`** are binary data in Active Directory. The `slapo-rwm` module in OpenLDAP cannot convert them to readable strings (e.g., UUID or Base64).
+* **Binary vs. string**: Attribute values such as **`objectGUID`** and **`objectSid`** are binary data in Active Directory. The `slapo-rwm` module in OpenLDAP cannot convert them to readable strings (e.g. UUID or Base64).
 * **Base64 Expectation**: If you use tools like `ldapsearch` without the appropriate flags, binary attributes may be returned as garbled characters or with an error. These tools often expect binary data to be Base64 encoded.
 * **Error `handler exited with 1`**: This error occurs when `slapo-rwm` attempts to perform an operation (e.g., `md5()` or `suffix=`) on binary data that it cannot process. This means that it is not possible to map `objectGUID` to a readable string directly in the proxy configuration. **Solution**: Accept the binary nature of these attributes. Your client application must fetch this data and convert it to a UUID string itself. In `ldapsearch`, you can use the `base64` option in the command to explicitly request value encoding.
 
-#### 6.4.3. Errors while starting the container
+#### 6.4.3. Repository Configuration Issues in IBM WebSphere
+
+* **Federated Repository Configuration**: When adding a federated repository, specifying the root tree DN as the "Unique distinguished name of the base (or parent) entry in federated repositories" e.g. the value `dc=scisoftware,dc=pl` (container parameter `LDAP_BASED_OLC_SUFFIX`) may result in the error message: **Error CWWIM5018E The distinguished name [dc=scisoftware,dc=pl] of the base entry in the repository is invalid. Root cause: [LDAP: error code 32 - Unable to select valid candidates].**
+* **Solution**: We'll solve the problem by first adding a repository pointing to the tree of one of the proxy connections, e.g. `ou=pluton,dc=scisoftware,dc=pl`, and then editing the `wimconfig.xml` configuration file located in the deployment environment's configuration directory (e.g., the `DmgrProfile` profile). Example file path and location: `/opt/IBM/BAW/20.0.0.1/profiles/DmgrProfile/config/cells/PCCell1/wim/config/wimconfig.xml`. When changing this, search for the just-configured value `ou=pluton,dc=scisoftware,dc=pl` and replace it with `dc=scisoftware,dc=pl`. Steps to follow:
+  * After adding the federated repository via the web console, **stop** the WebSphere servers. 
+  * Edit the `wimconfig.xml` file located in the deployment environment's configuration directory, for example, using the `vim` application with the command `vim /opt/IBM/BAW/20.0.0.1/profiles/DmgrProfile/config/cells/PCCell1/wim/config/wimconfig.xml`:
+    * Find and **replace** `<config:baseEntries name="ou=pluton,dc=scisoftware,dc=pl" nameInRepository="ou=pluton,dc=scisoftware,dc=pl"/>` with `<config:baseEntries name="dc=scisoftware,dc=pl" nameInRepository="dc=scisoftware,dc=pl"/>`
+    * Find and **replace** `<config:participatingBaseEntries name="ou=pluton,dc=scisoftware,dc=pl"/>` to `<config:participatingBaseEntries name="ou=pluton,dc=scisoftware,dc=pl"/>`
+  * **Start** the WebSphere server environment. After starting, in the WebSphere console, we can verify whether users from individual connected repositories are visible:
+
+*User `scichy` found in the remote **OpenLDAP*** database:
+![Successful search for user from local database](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/websphere_ibpm_proxy_to_repository_openldap.png)
+*User `slawas` found in the remote **AD*** database:
+![Successful search for user from local database data](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/websphere_pluton_proxy_to_repository_ad.png)
+*User `mrcmanager` found in local database `mdb`*:
+![Local database user search success](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/websphere_local_proxy_to_repository_mdb.png)
+
+#### 6.4.4. Errors while starting the container
 
 * **Checking the logs**: The most important troubleshooting tool is the container logs. Use `docker-compose logs openldap-proxy` (or `docker logs <container_id>`) to see messages from the `slapd` server.
 * **LDIF syntax errors**: Any errors in the LDIF files (e.g., invalid spaces, missing `add:`) will cause the container to fail to start correctly. Check the logs for parsing error messages.

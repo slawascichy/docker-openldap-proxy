@@ -626,7 +626,24 @@ Jeśli napotkasz błędy lub nieoczekiwane zachowanie, poniższe wskazówki pomo
 * **Oczekiwanie Base64**: Jeśli używasz narzędzi takich jak `ldapsearch` bez odpowiednich flag, binarne atrybuty mogą być zwracane jako nieczytelne znaki lub z błędem. Narzędzia te często oczekują, że dane binarne będą zakodowane w Base64.
 * **Błąd `handler exited with 1`**: Ten błąd pojawia się, gdy `slapo-rwm` próbuje wykonać operację (np. `md5()` lub `suffix=`) na danych binarnych, których nie potrafi przetworzyć. Oznacza to, że nie da się zmapować `objectGUID` na czytelny string bezpośrednio w konfiguracji proxy. **Rozwiązanie**: Akceptuj binarny charakter tych atrybutów. Twoja aplikacja kliencka musi sama pobrać te dane i przekonwertować je na string UUID. W `ldapsearch` możesz użyć opcji `base64` w poleceniu, aby jawnie zażądać zakodowania wartości.
 
-#### 6.4.3. Błędy podczas uruchamiania kontenera
+#### 6.4.3. Problemy konfiguracji repozytorium w IBM WebSphere
+
+* **Konfiguracja sfederowanego repozytorium**: Podczas dodawania sfederowanego repozytorium, podając `DN` głównego drzewa jako "Unikalna, wyróżniająca nazwa wpisu bazowego (lub nadrzędnego) w repozytoriach federacyjnych" np. wartość `dc=scisoftware,dc=pl` (parametr kontenera `LDAP_BASED_OLC_SUFFIX`) to możemy otrzymać komunikat błędu: **Error CWWIM5018E Nazwa wyróżniająca [dc=scisoftware,dc=pl] pozycji podstawowej w repozytorium jest niepoprawna. Podstawowa przyczyna: [LDAP: error code 32 - Unable to select valid candidates].**
+* **Rozwiązanie**: Problem rozwiążemy poprzez dodanie, w pierwszej kolejności, repozytorium wskazujące na drzewo jednego z połączeń proxy np. `ou=pluton,dc=scisoftware,dc=pl`, a następnie edycję pliku konfiguracyjnego `wimconfig.xml` znajdującego się w katalogu konfiguracyjnym środowiska wdrażania (np. profil `DmgrProfile`). Przykładowa ścieżka, lokalizacja, pliku: `/opt/IBM/BAW/20.0.0.1/profiles/DmgrProfile/config/cells/PCCell1/wim/config/wimconfig.xml`. Podczas zmiany wyszukujemy właśnie skonfigurowaną wartość `ou=pluton,dc=scisoftware,dc=pl` i zamieniamy ją na `dc=scisoftware,dc=pl`. Kroki jakie należy wykonać:  
+  * Po dodaniu za pomocą konsoli Web sfederowanego repozytorium **zatrzymaj** serwery WebSphere.
+  * Edytuj plik `wimconfig.xml` znajdujący się w katalogu konfiguracyjnym środowiska wdrażania przykładowo używając do tego aplikacji `vim` poleceniem  `vim /opt/IBM/BAW/20.0.0.1/profiles/DmgrProfile/config/cells/PCCell1/wim/config/wimconfig.xml`:
+    * Znajdź i **zamień** `<config:baseEntries name="ou=pluton,dc=scisoftware,dc=pl" nameInRepository="ou=pluton,dc=scisoftware,dc=pl"/>` na `<config:baseEntries name="dc=scisoftware,dc=pl" nameInRepository="dc=scisoftware,dc=pl"/>`
+    * Znajdź i **zamień** `<config:participatingBaseEntries name="ou=pluton,dc=scisoftware,dc=pl"/>` na `<config:participatingBaseEntries name="ou=pluton,dc=scisoftware,dc=pl"/>`
+  * **Wystartuj** środowisko serwerów WebSphere. Po wystartowaniu w konsoli WWebSphere możemy zweryfikować, czy widoczni są użytkownicy z poszczególnych podłączonych repozytoriów:
+
+*Znaleziony użytkownik `scichy` w zdalnej bazie danych **OpenLDAP***:
+![Sukces szukania użytkownika z lokalnej bazy danych](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/websphere_ibpm_proxy_to_repository_openldap.png)
+*Znaleziony użytkownik `slawas` w zdalnej bazie danych **AD***:
+![Sukces szukania użytkownika z lokalnej bazy danych](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/websphere_pluton_proxy_to_repository_ad.png)
+*Znaleziony użytkownik `mrcmanager` w lokalnej bazie `mdb`*:
+![Sukces szukania użytkownika z lokalnej bazy danych](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/websphere_local_proxy_to_repository_mdb.png)
+
+#### 6.4.4. Błędy podczas uruchamiania kontenera
 
 * **Sprawdzanie logów**: Najważniejszym narzędziem do rozwiązywania problemów są logi kontenera. Użyj `docker-compose logs openldap-proxy` (lub `docker logs <container_id>`), aby zobaczyć komunikaty z serwera `slapd`.
 * **Błędy składni LDIF**: Wszelkie błędy w plikach LDIF (np. niepoprawne spacje, brak `add: `) spowodują, że kontener nie uruchomi się poprawnie. Sprawdź logi pod kątem komunikatów o błędach parsowania.
