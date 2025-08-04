@@ -34,22 +34,25 @@ RUN apt clean && \
 	rm -fr /var/lib/ldap && \
 	rm -fr /etc/ldap/slapd.d
 
-
 RUN mkdir -p /opt/init && \
     mkdir -p /opt/modify && \
 	mkdir -p /opt/service && \
-	mkdir -p /opt/cacerts && \
-	mkdir -p /opt/workspace
+	mkdir -p /opt/cacerts 
+
+# Przykładowe operacje dostosowujące działanie bazy LDAP 
+RUN mkdir -p /opt/workspace
+COPY workspace/* /opt/workspace
+	 
 # Kopiowanie niezbędnych do konfiguracji plików - START
 # cp schemas/* /etc/ldap/schema
 COPY schemas/* /etc/ldap/schema
 # cp -r init/* /opt/init/
-COPY init/* /opt/init
+COPY init/0* /opt/init
+#COPY init/03-metadatabase-create.ldif /opt/init/03-metadatabase-create.ldif
 # cp -r modify/* /opt/modify/
 COPY modify/* /opt/modify
 # cp -r service/* /opt/service/
 COPY service/* /opt/service
-COPY workspace/* /opt/workspace
 # Kopiowanie niezbędnych do konfiguracji plików - KONIEC
 
 RUN chmod a-x /etc/ldap/schema/* \
