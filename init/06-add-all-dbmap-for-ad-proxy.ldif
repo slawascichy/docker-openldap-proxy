@@ -25,12 +25,12 @@ olcDbMap: attribute shadowExpire accountExpires
 -
 add: olcDbMap
 olcDbMap: attribute shadowLastChange pwdLastSet
-#-
-#add: olcDbMap
-#olcDbMap: attribute entryUUID objectGUID
 -
 add: olcDbMap
-olcDbMap: attribute objectGUID objectGUID
+olcDbMap: attribute entryUUID objectGUID
+#-
+#add: olcDbMap
+#olcDbMap: attribute objectGUID objectGUID
 -
 add: olcDbMap
 olcDbMap: attribute objectSid objectSid
