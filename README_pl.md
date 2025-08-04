@@ -638,8 +638,10 @@ Jeśli napotkasz błędy lub nieoczekiwane zachowanie, poniższe wskazówki pomo
 
 *Znaleziony użytkownik `scichy` w zdalnej bazie danych **OpenLDAP***:
 ![Sukces szukania użytkownika z lokalnej bazy danych](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/websphere_ibpm_proxy_to_repository_openldap.png)
+
 *Znaleziony użytkownik `slawas` w zdalnej bazie danych **AD***:
 ![Sukces szukania użytkownika z lokalnej bazy danych](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/websphere_pluton_proxy_to_repository_ad.png)
+
 *Znaleziony użytkownik `mrcmanager` w lokalnej bazie `mdb`*:
 ![Sukces szukania użytkownika z lokalnej bazy danych](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/websphere_local_proxy_to_repository_mdb.png)
 

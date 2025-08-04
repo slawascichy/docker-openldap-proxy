@@ -629,8 +629,10 @@ If you encounter errors or unexpected behavior, the following tips will help dia
 
 *User `scichy` found in the remote **OpenLDAP*** database:
 ![Successful search for user from local database](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/websphere_ibpm_proxy_to_repository_openldap.png)
+
 *User `slawas` found in the remote **AD*** database:
 ![Successful search for user from local database data](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/websphere_pluton_proxy_to_repository_ad.png)
+
 *User `mrcmanager` found in local database `mdb`*:
 ![Local database user search success](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/websphere_local_proxy_to_repository_mdb.png)
 
