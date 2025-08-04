@@ -67,10 +67,10 @@ services:
     ports:
       - "389:389"
       - "636:636"
-  ldap-ui:
+  osixia-phpldapadmin:
     image: osixia/phpldapadmin:stable
     build: .
-    hostname: ldap-ui
+    hostname: osixia-phpldapadmin
     networks:
       - default-network
     depends_on:

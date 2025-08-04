@@ -5,6 +5,10 @@
 #
 # Mapowanie OpenLDAP Online Configuration Reference (na atrybuty olc)
 # https://tylersguides.com/guides/openldap-online-configuration-reference/
+# 
+# Rozwiązywanie problemów na serverfault: 
+# https://serverfault.com/questions/1152227/combining-openldap-and-active-directory-via-openldap-meta-backend/1190129?noredirect=1#comment1542537_1190129
+# https://serverfault.com/questions/1190133/objectguid-to-entryuuid-mapping-in-openldap-proxy-with-ad
 #
 ##############################################################################
 
@@ -29,11 +33,25 @@ docker run --name openldap-proxy -p 389:389 -p 636:636 ^
  --detach scisoftware/openldap-proxy:ubuntu-24.04
 
 # Uruchomienie kompozycji podstawowej (tylko kontener openldap)
-docker compose -f docker-compose.yml --env-file ldap-conf.env up
+docker compose -f docker-compose.yml --env-file ldap-conf.env up -d
 
-# Uruchomienie kompozycji z UI
-docker compose -f docker-compose-with-ui.yml --env-file ldap-conf.env up -d
+# UI użytkownika: Testowanie kompozycji z ldap-ui
+docker compose -f docker-compose-ldapui.yml --env-file ldapui-conf.env up
+docker compose -f docker-compose-ldapui.yml --env-file ldapui-conf.env up -d
 
+# UI użytkownika: Testowanie kompozycji z osixia/phpldapadmin
+docker compose -f docker-compose-osixia-phpldapadmin.yml --env-file phpldapadmin-conf.env up
+docker compose -f docker-compose-osixia-phpldapadmin.yml --env-file phpldapadmin-conf.env up -d
+
+# UI użytkownika: Testowanie kompozycji z phpldapadmin/phpldapadmin
+docker compose -f docker-compose-phpldapadmin-phpldapadmin.yml --env-file ldap-conf.env up
+docker compose -f docker-compose-phpldapadmin-phpldapadmin.yml --env-file ldap-conf.env up -d
+
+# Uruchomienie kompozycji ldap z ui (tylko kontener openldap wraz z osixia-phpldapadmin)
+docker compose -f docker-compose-with-osixia-phpldapadmin.yml --env-file ldap-conf.env up -d
+
+
+phpldapadmin-conf
 
 ##############################################################################
 # Publikowanie obrazów
@@ -91,7 +109,7 @@ ldapsearch -x -D "uid=ldapui,ou=Admins,ou=local,dc=scisoftware,dc=pl" -w secret 
 # Pobieranie definicji reguł uprawnień
 #
 ldapsearch -Y EXTERNAL -H ldapi:/// -b "olcDatabase={2}mdb,cn=config" olcAccess
-ldapsearch -Y EXTERNAL -H ldapi:/// -b "olcDatabase={3}meta,cn=config" olcAccess
+ldapsearch -Y EXTERNAL -H ldapi:/// -b "olcDatabase={4}meta,cn=config" olcAccess
 
 ##############################################################################
 # Dekodowanie danych w base64
@@ -114,7 +132,7 @@ ldapmodify -Y EXTERNAL -H ldapi:/// -f modify_mdb_acl_6.ldif
 ##############################################################################
 # Przykłady konfiguracji metabaz danych
 #
-dn: olcMetaSub=pluton,olcDatabase={3}meta,cn=config
+dn: olcMetaSub=pluton,olcDatabase={4}meta,cn=config
 objectClass: olcMetaTargetConfig
 olcMetaSub: pluton
 olcDbURI: ldap://pluton.hgdb.org/ou=pluton,dc=scisoftware,dc=pl
@@ -122,7 +140,7 @@ olcDbIDAssertBind: binddn="CN=Administrator,CN=Users,DC=BOJANO,DC=LOCAL" bindmet
 olcDbRebindAsUser: TRUE
 olcDbRewrite: suffixmassage "ou=pluton,dc=scisoftware,dc=pl" "CN=Users,DC=BOJANO,DC=LOCAL"
 
-dn: olcMetaSub=groups,olcDatabase={3}meta,cn=config
+dn: olcMetaSub=groups,olcDatabase={4}meta,cn=config
 objectClass: olcMetaTargetConfig
 olcMetaSub: groups
 olcDbURI: ldap://pluton.hgdb.org/ou=groups,dc=example,dc=com
@@ -130,7 +148,7 @@ olcDbIDAssertBind: binddn="CN=Administrator,CN=Users,DC=BOJANO,DC=LOCAL" bindmet
 olcDbRebindAsUser: TRUE
 olcDbRewrite: suffixmassage "ou=groups,dc=example,dc=com" "OU=Groups,DC=BOJANO,DC=LOCAL"
 
-dn: olcMetaSub=users,olcDatabase={3}meta,cn=config
+dn: olcMetaSub=users,olcDatabase={4}meta,cn=config
 objectClass: olcMetaTargetConfig
 olcMetaSub: users
 olcDbURI: ldap://pluton.hgdb.org/ou=Users,dc=scisoftware,dc=pl

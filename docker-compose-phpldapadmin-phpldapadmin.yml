@@ -1,0 +1,60 @@
+networks:
+  default-network:
+    driver: bridge
+
+volumes:
+  phpldapadmin-certs:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /d/mercury/phpldapadmin/certs
+  phpldapadmin-sessions:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /d/mercury/phpldapadmin/sessions
+  phpldapadmin-logs:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /d/mercury/phpldapadmin/logs
+  ldap-client-certs:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /d/mercury/phpldapadmin/ldap-certs
+
+services:
+  phpldapadmin-phpldapadmin:
+    image: phpldapadmin/phpldapadmin:latest
+    build: .
+    hostname: phpldapadmin-phpldapadmin
+    networks:
+      - default-network
+    environment:
+      - APP_KEY="base64:fgcOpfQcnzApC47YD8nQTpqxpeC6ctQ2PL+t1ar31R4="
+      - APP_DEBUG=true
+      - APP_TIMEZONE="Europe/Warsaw"
+#      - CACHE_DRIVER=file
+#      - LDAP_BASE_DN=dc=scisoftware,dc=openldap
+      - LDAP_BASE_DN=dc=scisoftware,dc=pl
+      - LDAP_CACHE=false
+      - LDAP_NAME=OpenLDAP Proxy
+      - LDAP_CONNECTION=ldap
+      - LDAP_HOST=openldap-proxy
+      - LDAP_PORT=389
+      - LDAP_LOGIN_ATTR=uid
+      - LDAP_LOGIN_OBJECTCLASS=person
+#      - LDAP_USERNAME=cn=manager,dc=scisoftware,dc=pl
+#      - LDAP_PASSWORD=secret
+    volumes: 
+#      - phpldapadmin-certs:/container/service/phpldapadmin/assets/apache2/certs:rw
+      - phpldapadmin-sessions:/app/storage/framework/sessions:rw
+      - phpldapadmin-logs:/app/storage/logs:rw
+#      - ldap-client-certs:/container/service/ldap-client/assets/certs:rw
+    ports:
+      - "8080:8080"
