@@ -573,5 +573,6 @@ ldapsearch -x -H ldapi:/// -b "cn=config" -LLL > /var/backups/openldap_config_$(
 * [OpenLDAP meta backend OLC configuration](https://serverfault.com/questions/866542/openldap-meta-backend-olc-configuration)
 * [OpenLDAP Online Configuration Reference Mapping](https://tylersguides.com/guides/openldap-online-configuration-reference/)
 * [Combining OpenLDAP and Active Directory via OpenLDAP meta backend](https://serverfault.com/questions/1152227/combining-openldap-and-active-directory-via-openldap-meta-backend/1190129?noredirect=1#comment1542537_1190129)
-*Answers provided by Gemini (Google), 2025
+* Answers provided by Gemini (Google), 2025
+
 
