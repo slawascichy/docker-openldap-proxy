@@ -1,0 +1,6 @@
+# delete_rwm_guid_rewrite_rule.ldif
+# ldapmodify -Y EXTERNAL -H ldapi:/// -f delete_rwm_guid_rewrite_rule.ldif
+dn: olcOverlay={0}rwm,olcDatabase={4}meta,cn=config
+changetype: modify
+delete: olcRwmRewrite
+olcRwmRewrite: {0}rwm-rewriteEngine "on"

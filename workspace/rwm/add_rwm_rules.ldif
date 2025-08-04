@@ -1,0 +1,8 @@
+# ldapmodify -Y EXTERNAL -H ldapi:/// -f add_rwm_rules.ldif
+dn: olcOverlay={0}rwm,olcDatabase={4}meta,cn=config
+changetype: modify
+#add: olcRwmMap
+#olcRwmMap: {0}attribute objectGUID objectGUID
+#-
+add: olcRwmRewrite
+olcRwmRewrite: {1}attr=objectGUID value=(.*) "$1"
