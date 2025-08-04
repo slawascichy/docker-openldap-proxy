@@ -10,10 +10,37 @@
 dn: olcMetaSub=${META_SUB},olcDatabase={4}meta,cn=config
 changetype: modify
 add: olcDbMap
-olcDbMap: attribute userPrincipalName uid
+olcDbMap: attribute sAMAccountName uid
 -
 add: olcDbMap
 olcDbMap: attribute distinguishedName entryDistinguishedName
+-
+add: olcDbMap
+olcDbMap: attribute thumbnailPhoto jpegPhoto
+-
+add: olcDbMap
+olcDbMap: attribute userPassword unicodePwd
+-
+add: olcDbMap
+olcDbMap: attribute accountExpires shadowExpire
+-
+add: olcDbMap
+olcDbMap: attribute pwdLastSet shadowLastChange
+-
+add: olcDbMap
+olcDbMap: attribute objectGUID entryUUID
+#-
+#add: olcDbMap
+#olcDbMap: attribute objectGUID objectGUID
+-
+add: olcDbMap
+olcDbMap: attribute objectSid objectSid
+-
+add: olcDbMap
+olcDbMap: attribute member uniqueMember
+#-
+#add: olcDbMap
+#olcDbMap: attribute primaryGroupID gidNumber
 -
 add: olcDbMap
 olcDbMap: attribute cn cn
@@ -52,16 +79,10 @@ add: olcDbMap
 olcDbMap: attribute memberOf memberOf
 -
 add: olcDbMap
-olcDbMap: attribute primaryGroupID gidNumber
--
-add: olcDbMap
 olcDbMap: attribute accountExpires shadowExpire
 -
 add: olcDbMap
 olcDbMap: attribute pwdLastSet shadowLastChange
--
-add: olcDbMap
-olcDbMap: attribute sAMAccountName sAMAccountName
 -
 add: olcDbMap
 olcDbMap: attribute name name
@@ -94,16 +115,16 @@ add: olcDbMap
 olcDbMap: attribute streetAddress streetAddress
 -
 add: olcDbMap
-olcDbMap: attribute objectGUID objectGUID
--
-add: olcDbMap
-olcDbMap: attribute objectSid objectSid
--
-add: olcDbMap
-olcDbMap: attribute member uniqueMember
+olcDbMap: objectclass organizationalPerson inetOrgPerson
 -
 add: olcDbMap
 olcDbMap: objectclass user aDPerson
 -
 add: olcDbMap
 olcDbMap: objectclass group groupOfUniqueNames
+-
+add: olcDbMap
+olcDbMap: objectclass CONTAINER domain
+#-
+#add: olcDbMap
+#olcDbMap: attribute *

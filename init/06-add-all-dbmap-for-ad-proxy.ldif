@@ -37,6 +37,9 @@ olcDbMap: attribute objectSid objectSid
 -
 add: olcDbMap
 olcDbMap: attribute uniqueMember member
+#-
+#add: olcDbMap
+#olcDbMap: attribute gidNumber primaryGroupID
 -
 add: olcDbMap
 olcDbMap: attribute cn cn

@@ -5,16 +5,17 @@
 #
 # Required parameters:
 # --------------------
-# LDAP_LOCAL_OLC_SUFFIX      - suffix for local MDB database, e.g. "dc=docker,dc=openldap"
-# LDAP_BASED_OLC_SUFFIX      - suffix for META database, proxy, target database, e.g. "dc=scisoftware,dc=pl"
+# LDAP_LOCAL_OLC_SUFFIX      - suffix for local MDB database e.g. "dc=docker,dc=openldap"
+# LDAP_BASED_OLC_SUFFIX      - suffix for META database, proxy, target database e.g. "dc=scisoftware,dc=pl"
 # LDAP_ROOT_PASSWD_ENCRYPTED - encrypted superuser password, built based on LDAP_ROOT_PASSWD_PLAINTEXT
 # LDAP_LOCAL_ROOT_DN         - superuser's DN from the local MDB database. This parameter is built based on the
 #                              LDAP_ROOT_CN and LDAP_LOCAL_OLC_SUFFIX parameters:
-#                              cn=${LDAP_ROOT_CN},${LDAP_LOCAL_OLC_SUFFIX} e.g., "cn=manager,dc=docker,dc=openldap"
+#                              cn=${LDAP_ROOT_CN},${LDAP_LOCAL_OLC_SUFFIX} e.g. "cn=manager,dc=docker,dc=openldap"
 # LDAP_BASED_ROOT_DN         - superuser's DN from the local META database. This parameter is built based on the
 #                              LDAP_ROOT_CN and LDAP_BASED_OLC_SUFFIX parameters:
-#                              cn=${LDAP_ROOT_CN},${LDAP_BASED_OLC_SUFFIX} e.g., "cn=manager,dc=scisoftware,dc=pl"
-# LDAP_OLC_ACCESS            - additional access privileges to '*' e.g., "by anonymous auth by * read"
+#                              cn=${LDAP_ROOT_CN},${LDAP_BASED_OLC_SUFFIX} e.g. "cn=manager,dc=scisoftware,dc=pl"
+# LDAP_OLC_ACCESS            - additional access privileges to '*' e.g. "by anonymous auth by * read"
+# LDAP_DB_DIR                - directory of MDB database files e.g. "/var/lib/ldap"
 ##############################################################################
 #
 dn: olcDatabase=mdb,cn=config
