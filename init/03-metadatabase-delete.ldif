@@ -1,5 +1,5 @@
 ##############################################################################
 # Deleting the META database - first check if the index {3} is correct
 ##############################################################################
-dn: olcDatabase={3}meta,cn=config
+dn: olcDatabase={4}meta,cn=config
 changetype: delete

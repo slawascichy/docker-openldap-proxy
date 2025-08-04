@@ -7,7 +7,7 @@
 ##############################################################################
 #
 # add_reversed_dbmap_attributes.ldif
-dn: olcMetaSub=${META_SUB},olcDatabase={3}meta,cn=config
+dn: olcMetaSub=${META_SUB},olcDatabase={4}meta,cn=config
 changetype: modify
 add: olcDbMap
 olcDbMap: attribute userPrincipalName uid
