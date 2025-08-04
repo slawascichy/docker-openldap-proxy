@@ -347,7 +347,7 @@ Podczas pierwszego uruchomienia usługi zawartość lokalnej bazy danych jest in
   - `uid=mrcmanager,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - przykładowy użytkownik z uprawnieniami administratora systemu [Mercury 3.0 (HgDB)](https:///hgdb.org); hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno zostać zmienione w środowiskach produkcyjnych.
   - `uid=mrcuser,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - przykładowy użytkownik z uprawnieniami użytkownika systemu [Mercury 3.0 (HgDB)](https:///hgdb.org); hasło użytkownika należy zdefiniować w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i zmienić w środowiskach produkcyjnych.
 
-![Przykład predefiniowanego drzewa lokalnej bazy danych](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/sample-predefined-tree-by-apache-dir-studio.png)
+![Przykład predefiniowanego drzewa lokalnej bazy danych](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/sample-predefined-tree-by-apache-dir-studio-2.png)
 
 ---
 

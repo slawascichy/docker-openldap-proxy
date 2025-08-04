@@ -40,11 +40,13 @@ objectClass: top
 ou: Admins
 description: Administrators for changing entry 
 
-dn: cn=Administrator,ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}
+dn: uid=ldapadmin,ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}
 objectClass: person
 objectClass: top
-cn: Administrator
+objectClass: uidObject
+cn: ldapadmin
 sn: Administrator
+uid: ldapadmin
 description: Administrator
 userPassword: ${LDAP_TECHNICAL_USER_ENCRYPTED}
 
@@ -55,8 +57,8 @@ dn: uid=ldapui,ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}
 objectClass: person
 objectClass: top
 objectClass: uidObject
-cn: Fast and versatile LDAP editor
-sn: LDAP editor
+cn: Editor
+sn: LDAP Editor
 uid: ldapui
 description: User bind for connection to Fast and versatile LDAP editor https://github.com/dnknth/ldap-ui
 userPassword: ${LDAP_TECHNICAL_USER_ENCRYPTED}
