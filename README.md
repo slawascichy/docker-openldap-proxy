@@ -126,10 +126,10 @@ Poniżej fragment definicji kompozycji:
 Po uruchomieniu kontenera, skrypt startujący podejmie próbę utworzenia bazy danych i uruchomienia instancji serwera OpenLDAP.
 Próba utworzenia bazy danych jest podejmowana na podstawie warunku istnienia pliku `ldap.init` w katalogu `/var/lib/ldap` na kontenerze. Ten katalog jest mapowany na wolumen o nazwie `openldap`.
 
-> [Dygresja]  
+> [!TIP] 
 > Jeżeli chcesz by baza danych OpenLDAP została zbudowana od nowa to wystarczy usunąć plik `ldap.init`.
 
-> [Ostrzeżenie]  
+> [!CAUTION] 
 > Jeżeli usuniesz plik `ldap.init` utracisz wszystkie dotychczasowe dane.
 
 ### 2.2. Dodawanie proxy do zewnętrznej bazy
@@ -175,7 +175,7 @@ Wszystkie powyższe informacje można uzyskać wydając polecenie:
 ./add-proxy-to-external-ldap.sh --help
 ```
 
-> [Uwaga]  
+> [!IMPORTANT]
 > Zanim wydasz plecenie dodania bazy wpierw przetestuj połączenie do niej. Użyj opcji `--test` podczas pierwszego uruchomienia skryptu.
 
 
