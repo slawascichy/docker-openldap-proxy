@@ -10,7 +10,9 @@ Oprogramowanie OpenLDAP to pakiet oprogramowania katalogowego o otwartym kodzie 
 
 ### 1.1. Cel projektu
 
-Projekt serwera OpenLDAP w trybie proxy ma na celu unifikację dostępu do różnych źródeł danych LDAP (takich jak Active Directory, lokalna baza MDB, inne serwery LDAP-S) dla aplikacji klienckich. Pozwala to na centralizację uwierzytelniania i autoryzacji oraz prezentację spójnego widoku katalogu, niezależnie od jego wewnętrznej struktury.
+Projekt kontenera Docker serwera OpenLDAP w trybie proxy ma na celu unifikacji dostępu do różnych źródeł danych LDAP (takich jak Active Directory, lokalna baza MDB, inne serwery LDAP-S) dla aplikacji klienckich. Pozwala to na centralizację uwierzytelniania i autoryzacji oraz prezentację spójnego widoku katalogu, niezależnie od jego wewnętrznej struktury.
+
+Tworzony w tym projekcie kontener Docker może działać działa jako pośrednik (proxy) między klientami a Active Directory, normalizując schemat LDAP i umożliwiając integrację z systemami, które nie rozumieją natywnego schematu AD. 
 
 ### 1.2. Diagram architektury
 

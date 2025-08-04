@@ -12,6 +12,8 @@ OpenLDAP is an open-source, community-developed directory software package that 
 
 The OpenLDAP proxy server design aims to unify access to various LDAP data sources (such as Active Directory, a local MDB, or other LDAP-S servers) for client applications. This allows for centralized authentication and authorization and presents a consistent view of the directory, regardless of its internal structure.
 
+The Docker container created in this project can act as an intermediary (proxy) between clients and Active Directory, normalizing the LDAP schema and enabling integration with systems that do not understand the native AD schema.
+
 ### 1.2. Architecture diagram
 
 ![Diagram architektury proponowanego użycia](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/docker-openldap-proxy-diagram-en.png)
