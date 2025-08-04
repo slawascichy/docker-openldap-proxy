@@ -10,11 +10,15 @@
 # BIND_BASE_CTX_SEARCH  - base search branch of the connecting LDAP instance e.g. "CN=Users,DC=BOJANO,DC=LOCAL"
 # LDAP_PROXY_OU_NAME    - name of the organizational unit under which the connecting LDAP tree will appear
 ##############################################################################
-dn: olcMetaSub=${LDAP_PROXY_OU_NAME},olcDatabase={3}meta,cn=config
+dn: olcMetaSub=${LDAP_PROXY_OU_NAME},olcDatabase={4}meta,cn=config
 objectClass: olcMetaTargetConfig
 olcMetaSub: ${LDAP_PROXY_OU_NAME}
+olcDbIDAssertAuthzFrom: dn.regex:.*
 olcDbURI: ${BIND_LDAP_URI}/ou=${LDAP_PROXY_OU_NAME},${LDAP_BASED_OLC_SUFFIX}
-olcDbIDAssertBind: binddn="${BIND_DN}" bindmethod=simple credentials="${BIND_PASSWD_PLAINTEXT}"
-olcDbRebindAsUser: TRUE
+olcDbIDAssertBind: binddn="${BIND_DN}" bindmethod=simple credentials="${BIND_PASSWD_PLAINTEXT}" flags=override mode=none
 olcDbRewrite: suffixmassage "ou=${LDAP_PROXY_OU_NAME},${LDAP_BASED_OLC_SUFFIX}" "${BIND_BASE_CTX_SEARCH}"
+olcDbChaseReferrals: FALSE
+olcDbNoRefs: TRUE
+olcDbProtocolVersion: 3
+olcDbRebindAsUser: TRUE
 olcDbStartTLS: none
