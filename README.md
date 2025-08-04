@@ -18,8 +18,7 @@ Projekt serwera OpenLDAP w trybie proxy ma na celu unifikację dostępu do róż
 
 ### 1.2. Diagram architektury
 
-![Diagram architektury proponowanego użycia](
-https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/docker-openldap-proxy-diagram-pl.png)
+![Diagram architektury proponowanego użycia](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/docker-openldap-proxy-diagram-pl.png)
 
 ### 1.3. Wersje oprogramowania
 
@@ -132,7 +131,7 @@ Próba utworzenia bazy danych jest podejmowana na podstawie warunku istnienia pl
 > [!CAUTION] 
 > Jeżeli usuniesz plik `ldap.init` utracisz wszystkie dotychczasowe dane.
 
-### 2.2. Dodawanie proxy do zewnętrznej bazy
+### 2.3. Dodawanie proxy do zewnętrznej bazy
 
 Dodawanie kolejnej bazy zewnętrznej odbywa się już po uruchomieniu kontenera. Uruchamiamy ręcznie skrypt `add-proxy-to-external-ldap.sh`, który znajdziesz w katalogu `/opt/service` na kontenerze.
 Aby uruchomić skrypt zaloguj się do konsoli uruchomionego kontenera wydając polecenia w linii komend:
@@ -224,27 +223,156 @@ Poniżej znajduje się lista kluczowych plików LDIF użytych do konfiguracji se
 * **Wymagane TLS:** `olcTLSVerifyClient: demand` (lub `allow`, `never` w zależności od wymagań)
 * **Wersje protokołów:** `olcTLSProtocolMin: 3.2`
 
+### 2.6. Niestandardowe schematy atrybutów
+
+> [!NOTE]
+> W ramach dostosowania schematu `core` zmieniono definicję atrybutu `uniqueMember`. Oryginalnie jest on w.g RFC2256 definicją unikalnego członka grupy i jest typu "Nazwa lub unikalny UID" `1.3.6.1.4.1.1466.115.121.1.34 - Name and Optional UID syntax`. Jednakże typ ten nie jest tłumaczony z wartości zewnętrznej bazy danych na lokalny podczas działania proxy. Dlatego zmieniono jedgo definicje na `( 2.5.4.50 NAME 'uniqueMember' DESC 'RFC2256: unique member of a group' EQUALITY distinguishedNameMatch SUP distinguishedName )`.
+
+
+#### 2.6.1. Schemat atrybutów CSZU
+
+**CSZU** (polski skrót od Centralny System Zarządzania Użytkownikami) - to autorski system repozytorium użytkowników. Załadowana schema zawiera definicje klas obiektów o nazwach `cszuAttrs`, `cszuPrivs`, `cszuUser` and `cszuGroup`:
+
+```text
+#
+# Author's scheme supporting the Central User Management System 
+# (Centralny System Zarządzania Użytkownikami - CSZU)
+#
+# The schema supports data synchronization between OpenLDAP and IBM BPM. 
+# Additionally, it contains the attribute 'allowSystem', which is used 
+# as an additional filter in integration with sssd (Unix)
+#
+# Value's format in 'allowSystem' attribute is:
+# 	<host_name>;<service_name>;<expiration_date_in_format_YYYYMMDDHH24mm>;<task_ID>
+# Where:
+#  - host_name: name of host
+#  - service_name - name of service
+#  - expiration_date_in_format_YYYYMMDDHH24mm - date of expiration of privilege 
+#  - task_ID - task identifier in the service system
+# Samples:
+#   admin.scisoftware.pl;shell;203512300000;POC-01
+#   admin.scisoftware.pl;IBMBPM;203512300000;POC-01
+# Sample of using the 'allowSystem' attribute as additional user's filter (sssd configuration):
+# LDAP_ACCESS_FILTER=(&(objectclass=shadowaccount)(objectclass=posixaccount)(allowSystem=admin.scisoftware.pl;shell;*))
+#
+#
+#	Created by: Sławomir Cichy (slawas@slawas.pl)
+#   Copyright 2014-2024 SciSoftwere Sławomir Cichy Inc.
+#
+dn: cn=cszu,cn=schema,cn=config
+objectClass: olcSchemaConfig
+cn: cszu
+#
+olcAttributeTypes: ( 1.3.6.1.4.1.2021.3.1.4 NAME 'primaryGroup' SUP distinguishedName )
+olcAttributeTypes: ( 1.3.6.1.4.1.2021.3.1.5 NAME 'primaryGroupName' EQUALITY caseIgnoreMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.3.6.1.4.1.2021.3.1.3 NAME 'department' EQUALITY caseIgnoreMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.3.6.1.4.1.2021.3.1.6 NAME 'departmentCode' EQUALITY caseIgnoreMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.3.6.1.4.1.2021.3.1.7 NAME 'isChief' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE )
+olcAttributeTypes: ( 1.3.6.1.4.1.2021.3.1.9 NAME 'isActive' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE )
+olcAttributeTypes: ( 1.3.6.1.4.1.2021.3.1.8 NAME 'hrNumber' DESC 'RFC2307: An integer uniquely identifying ih HR System' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+olcAttributeTypes: ( 1.3.6.1.4.1.2021.3.0.2 NAME 'allowSystem' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15')
+olcAttributeTypes: ( 1.3.6.1.4.1.2021.3.0.3 NAME 'entryDistinguishedName' SUP distinguishedName )
+olcAttributeTypes: ( 1.3.6.1.4.1.2021.3.2.4 NAME 'managerGroup' SUP distinguishedName )
+olcAttributeTypes: ( 1.3.6.1.4.1.2021.3.2.3 NAME 'managerGroupName' EQUALITY caseIgnoreMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcObjectClasses: ( 1.3.6.1.4.1.2021.3.0.1 NAME 'cszuAttrs' DESC 'Attributes used by CSZU' AUXILIARY MUST ( allowSystem $ entryDistinguishedName ))
+olcObjectClasses: ( 1.3.6.1.4.1.2021.3.0.2 NAME 'cszuPrivs' DESC 'Granted access to systems' AUXILIARY MUST ( allowSystem $ entryDistinguishedName ))
+olcObjectClasses: ( 1.3.6.1.4.1.2021.3.1.1 NAME 'cszuUser' DESC 'Attributes used by CSZU for user entries' SUP cszuAttrs AUXILIARY MUST ( primaryGroup ) MAY ( primaryGroupName $ department $ departmentCode $ isChief $ isActive $ hrNumber $ allowSystem $ entryDistinguishedName) )
+olcObjectClasses: ( 1.3.6.1.4.1.2021.3.2.1 NAME 'cszuGroup' DESC 'Attributes used by CSZU for group entries' SUP cszuAttrs AUXILIARY MUST ( cn $ managerGroup ) MAY ( mail $ name $ displayName $ description $ manager $ member $ memberOf))
+```
+
+#### 2.6.2. Schemat atrybutów AD
+
+Schemat pozwalający na reprezentacje w ramach serwera OpenLDAP atrybutów o nazwach pochodzących AD. Zawiera definicje klas obiektów o nazwach `aDPerson`, `groupOfMembers`, `team`, `container`, `group` oraz `user`:
+
+```text
+#
+# Substitute for MS Active Directory schema
+#
+# created by: Sławomir Cichy (slawas@slawas.pl)
+# Only required attributes from Microsoft's schemas
+#
+dn: cn=adperson,cn=schema,cn=config
+objectClass: olcSchemaConfig
+cn: adperson
+#
+olcAttributeTypes: ( 1.2.840.113556.1.4.221 NAME 'sAMAccountName' EQUALITY caseIgnoreMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.656 NAME 'userPrincipalName' EQUALITY caseIgnoreMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.657 NAME 'msExchUserCulture' EQUALITY caseIgnoreMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.2.146 NAME 'company' EQUALITY caseIgnoreMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15'  SINGLE-VALUE )     
+olcAttributeTypes: ( 1.2.840.113556.1.4.35  NAME 'employeeID' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.2 NAME 'objectGUID' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.146 NAME 'objectSid' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
+olcAttributeTypes: ( 2.16.840.1.113730.3.1.35 NAME 'thumbnailPhoto' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.90 NAME 'unicodePwd' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.159 NAME 'accountExpires' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.96 NAME'pwdLastSet' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
+olcAttributeTypes: ( 1.1.2.1.1 NAME 'department' DESC 'Department Name' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+# Original ( 1.2.840.113556.1.2.102 NAME 'memberOf' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' NO-USER-MODIFICATION )
+olcAttributeTypes: ( 1.2.840.113556.1.2.102 NAME 'memberOf' SUP distinguishedName )
+##################################################
+# Custom polish MPK fields - START
+olcAttributeTypes: ( 1.2.840.113556.1.4.700 NAME 'MPK1Name' DESC 'Name of the first cost center - MPK (Cost Center)' EQUALITY caseIgnoreMatch  SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.701 NAME 'MPK1Code' DESC 'Code of the first cost center - MPK (Cost Center)' EQUALITY caseIgnoreMatch  SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.702 NAME 'MPK2Name' DESC 'Name of the second cost center - MPK (Cost Center)' EQUALITY caseIgnoreMatch  SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.703 NAME 'MPK2Code' DESC 'Code of the second cost center - MPK (Cost Center)' EQUALITY caseIgnoreMatch  SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+# Custom polish MPK fields - START
+##################################################
+olcObjectClasses: ( 1.2.840.113556.1.4.220 NAME 'aDPerson' DESC 'MS Active Directory Person Entry' SUP inetOrgPerson  STRUCTURAL MUST ( uid $ sAMAccountName ) MAY ( userPrincipalName $ msExchUserCulture $ MPK1Code $ MPK1Name $ MPK2Code $ MPK2Name $ userPassword $ company $ employeeID $ objectGUID $ objectSid $ thumbnailPhoto $ unicodePwd $ accountExpires $ pwdLastSet $ department) )
+olcObjectClasses: ( 1.2.840.113556.1.4.803 NAME 'groupOfMembers' DESC 'MS Active Directory group entry' SUP top STRUCTURAL MUST ( cn ) MAY ( cn $ mail $ name $ displayName $ description $ manager $ member $ memberOf $ sAMAccountName $ objectGUID $ objectSid ) X-ORIGIN 'AD Group' )
+olcObjectClasses: ( 1.2.840.113556.1.4.804 NAME 'team' DESC 'MS Active Directory group entry with required common name and display name' SUP top STRUCTURAL MUST ( cn $ displayName ) MAY ( mail $ name $ description $ manager $ member $ memberOf $ sAMAccountName $ objectGUID $ objectSid ) X-ORIGIN 'AD Group' )
+olcObjectClasses: ( 1.2.840.113556.1.3.23 NAME 'container' SUP top STRUCTURAL MUST (cn ) )
+olcObjectClasses: ( 1.2.840.113556.1.5.8 NAME 'group' SUP top STRUCTURAL MUST (cn $ sAMAccountName ) )
+olcObjectClasses: ( 1.2.840.113556.1.5.9 NAME 'user' SUP inetOrgPerson STRUCTURAL MUST ( uid $ sAMAccountName ) )
+```
+
+### 2.7 Predefiniowane wpisy w lokalnej bazie
+
+Podczas pierwszego uruchomienia usługi zawartość lokalnej bazy danych jest inicjowana przy użyciu predefiniowanych wpisów.
+
+- Baza danych zawiera predefiniowane 4 jednostki organizacyjne (OU):
+  - `ou=Groups,ou=local,${LDAP_BASED_OLC_SUFFIX}` - dla danych lokalnych grup, przykład: `ou=Groups,ou=local,dc=scisoftware,dc=pl`
+  - `ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - dla danych lokalnych użytkowników
+  - `ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}`` - dla danych lokalnych użytkowników technicznych; wpisy użytkownika z tej jednostki organizacyjnej mają uprawnienia do odczytu wszystkich wpisów; można ich używać w definicji połączenia dla systemów zewnętrznych.
+  - `ou=Admins,${LDAP_BASED_OLC_SUFFIX}` -dla danych lokalnych użytkowników administracyjnych; wpisy użytkownika z tej jednostki organizacyjnej mają pełne uprawnienia do zarządzania danymi.
+
+- Predefiniowane wpisy definiujące grupy użytkowników:
+  - `cn=mrc-admin,ou=local,ou=Groups,${LDAP_BASED_OLC_SUFFIX}` - grupa użytkowników z uprawnieniami administratora, która wykorzystywana jest przez system [Mercury 3.0 (HgDB)](https:///hgdb.org).
+  - `cn=mrc-user,ou=local,ou=Groups,${LDAP_BASED_OLC_SUFFIX}` - grupa użytkowników z uprawnieniami dostępu do danych , która wykorzystywana jest przez system [Mercury 3.0 (HgDB)](https:///hgdb.org).
+
+- Predefiniowane wpisy definiujące użytkowników:
+  - `${LDAP_ROOT_CN}`,ou=local,${LDAP_BASED_OLC_SUFFIX} - menedżer LDAP, użytkownik ma wszystkie uprawnienia do wszystkich wpisów; hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_ROOT_PASSWD_PLAINTEXT` (wartość domyślna: „secret”) i powinno być zmienione w środowiskach produkcyjnych. Przykład nazwy: `cn=manager,ou=local,dc=scisoftware,dc=pl`
+  - `cn=ldapadmin,ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - administrator, użytkownik ma uprawnienia do zapisu do wszystkich wpisów; hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno być zmienione w środowiskach produkcyjnych.
+  - `uid=ldapui,ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - administrator, użytkownik ma uprawnienia do zapisu do wszystkich wpisów; hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno zostać zmienione w środowiskach produkcyjnych. Wpis można wykorzystać do integracji z interfejsem użytkownika LDAP.
+  - `cn=${LDAP_TECHNICAL_USER_CN},ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}` - użytkownik techniczny do definiiowania komunikacji z serwerem OpenLDAP, domyślna wartość `LDAP_TECHNICAL_USER_CN` to „frontendadmin”, wpis użytkownika ma uprawnienia do odczytu wszystkich wpisów; hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno zostać zmienione w środowiskach produkcyjnych.
+  - `uid=mrcmanager,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - przykładowy użytkownik z uprawnieniami administratora systemu [Mercury 3.0 (HgDB)](https:///hgdb.org); hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno zostać zmienione w środowiskach produkcyjnych.
+  - `uid=mrcuser,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - przykładowy użytkownik z uprawnieniami użytkownika systemu [Mercury 3.0 (HgDB)](https:///hgdb.org); hasło użytkownika należy zdefiniować w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i zmienić w środowiskach produkcyjnych.
+
+[!Przykład predefiniowanego drzewa lokalnej bazy danych](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/sample-predefined-tree-by-apache-dir-studio.png)
+
 ---
 
 ## 3. Mapowanie atrybutów i klas obiektów (`olcDbMap`)
 
 Mapowanie atrybutów odbywa się za pomocą atrybutu `olcDbMap` w konfiguracji każdej podbazy `olcMetaSub`.
 
-### 3.1. Tabela mapowań (przykład)
-| Nazwa w OpenLDAP (klient) | Nazwa w źródle (AD/Lokalny) | Kierunek (Forward/Reverse) | Uwagi |
-| :----------------------- | :--------------------------- | :-------------------------- | :---- |
-| `uid`                    | `userPrincipalName`          | Forward / Reverse           | Mapowanie UID z UPN           |
-| `cn`                     | `cn`                         | Forward / Reverse           | Standardowe mapowanie         |
-| `givenName`              | `givenName`                  | Forward / Reverse           |                               |
-| `sn`                     | `sn`                         | Forward / Reverse           |                               |
-| `displayName`            | `displayName`                | Forward / Reverse           |                               |
-| `mail`                   | `mail`                       | Forward / Reverse           |                               |
-| `jpegPhoto`              | `thumbnailPhoto`             | Forward                     | Mapowanie miniatury AD na standardowe zdjęcie LDAP |
-| `objectGUID`             | `objectGUID`                 | Forward                     | Wymaga schematu AD            |
-| `objectSid`              | `objectSid`                  | Forward                     | Wymaga schematu AD            |
-| `preferredLanguage`      | `preferredLanguage`          | Forward / Reverse           |                               |
-| `objectclass: inetOrgPerson` | `objectclass: user`          | Forward / Reverse           | Mapowanie klas obiektów       |
-| `objectclass: groupOfUniqueNames` | `objectclass: group`         | Forward / Reverse           | Mapowanie klas obiektów       |
+### 3.1. Tabela predefiniowanych mapowań
+
+Poniżej tabela predefiniowanych mapowań dla połączeń do baz danych AD. Tabela została opracowana na podstawie najczęściej stosowanych w różnych systemach IT. 
+
+| Nazwa w OpenLDAP (klient) | Nazwa w źródle (AD) | Uwagi |
+| :----------------------- | :--------------------------- | :---- |
+| `uid`| `sAMAccountName` | Mapowanie UID z `sAMAccountName` nazwy użytkownika w AD. |
+| `jpegPhoto` | `thumbnailPhoto | Mapowanie miniatury AD na standardowe zdjęcie LDAP |
+| `cn` | `cn | Standardowe mapowanie |
+| `givenName`| `givenName` | |
+| `sn` | `sn` | |
+| `displayName` | `displayName` | |
+| `mail` | `mail` | |
+| `objectGUID` | `objectGUID` | Wymaga schematu AD |
+| `objectSid` | `objectSid` | Wymaga schematu AD |
+| `preferredLanguage` | `preferredLanguage` | |
+| `objectclass: inetOrgPerson` | `objectclass: user`      | Mapowanie klas obiektów |
+| `objectclass: groupOfUniqueNames` | `objectclass: group` | Mapowanie klas obiektów |
 
 ### 3.2. Uzasadnienie mapowań
 * `uid` <-> `userPrincipalName`: Umożliwia używanie atrybutu `uid` (popularnego w systemach UNIX/Linux) do autentykacji i identyfikacji, mapując go na unikalny `userPrincipalName` z AD.
