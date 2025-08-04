@@ -443,6 +443,7 @@ Mapowanie atrybutów między OpenLDAP a Active Directory ma na celu normalizacj�
 
 Atrybuty `objectGUID` i `objectSid` są atrybutami binarnymi specyficznymi dla Active Directory. Na razie nie udało się rozwiązać problemu prawidłowego mapowania pola `objectGUID` (AD) do `entryUIID` (OpenLDAP). Otworzyłem wątek [objectGUID to entryUUID mapping in Openldap proxy with AD](https://serverfault.com/questions/1190133/objectguid-to-entryuuid-mapping-in-openldap-proxy-with-ad) - zobaczymy może komuś uda się rozwiązać problem. 
 
+
 ## 4. Uwierzytelnianie i autoryzacja
 
 ### 4.1. ACL (Access Control Lists) - `olcAccess`
@@ -527,9 +528,67 @@ OpenLDAP proxy obsługuje różne metody uwierzytelniania:
 - **Simple Bind**: Uwierzytelnianie za pomocą nazwy użytkownika (DN) i hasła. Używane w testach i wielu aplikacjach.
 - *(Opcjonalnie: GSSAPI/Kerberos, DIGEST-MD5, jeśli skonfigurowane.)*
 
-## 5. Monitorowanie i rozwiązywanie problemów
+## 5. Przykłady wyszukiwań i testowania
 
-### 5.1. Logi OpenLDAP
+Po skonfigurowaniu kontenera możesz użyć poniższych przykładów zapytań `ldapsearch`, aby sprawdzić, czy wszystkie funkcje działają poprawnie. Pamiętaj, aby podmienić dane logowania i wartości DN na te z Twojej konfiguracji.
+
+#### Test 1: Wyszukiwanie z uwierzytelnieniem konta AD
+
+Ten test weryfikuje, czy konto administratora z Active Directory może uwierzytelnić się za pośrednictwem proxy i wyszukać użytkownika.
+
+```bash
+# Uwierzytelnienie jako administrator AD
+ldapsearch -x -D "cn=Administrator,ou=pluton,dc=scisoftware,dc=pl" -W \
+           -b "ou=pluton,dc=scisoftware,dc=pl" "cn=Administrator" uid userPrincipalName cn
+```
+
+**Oczekiwany wynik:** Serwer powinien zwrócić dane konta Administratora.
+
+-----
+
+#### Test 2: Wyszukiwanie po `uid` i pobieranie atrybutów binarnych
+
+Weryfikuje, czy proxy poprawnie mapuje `uid` i zwraca atrybuty binarne (`objectGUID`). Zauważ, że `objectGUID` będzie zwrócony w formie zaszyfrowanej/nieczytelnej, ponieważ jest atrybutem binarnym.
+
+```bash
+# Wyszukiwanie użytkownika z AD po `uid`
+ldapsearch -x -D "uid=ldapui,ou=Admins,ou=local,dc=scisoftware,dc=pl" -W \
+           -b "dc=scisoftware,dc=pl" "(uid=slawas)" cn objectGUID
+```
+
+**Oczekiwany wynik:** Zwrócone atrybuty `cn` i `objectGUID` dla użytkownika `slawas`. Wartość `objectGUID` będzie nieczytelna dla narzędzi klienckich.
+
+-----
+
+#### Test 3: Wyszukiwanie z konta lokalnego i pobieranie `entryuuid`
+
+Ten test sprawdza, czy konto z lokalnej bazy danych OpenLDAP (`manager`) może wyszukać użytkownika z Active Directory i pobrać atrybut `entryuuid` (który jest zmapowany na `objectGUID` z AD).
+
+```bash
+# Wyszukiwanie z konta lokalnego
+ldapsearch -x -D "cn=manager,ou=local,dc=scisoftware,dc=pl" -W \
+           -b "dc=scisoftware,dc=pl" "(uid=slawas)" cn uid entryuuid
+```
+
+**Oczekiwany wynik:** Zwrócone atrybuty `cn`, `uid` i `entryuuid` dla użytkownika `slawas`. Wartość `entryuuid` będzie identyczna z nieczytelną wartością `objectGUID` z poprzedniego testu.
+
+-----
+
+#### Test 4: Wyszukiwanie poddrzewa i sprawdzanie `objectClass`
+
+Ten test weryfikuje, czy można wyszukiwać w całym poddrzewie (`-s sub`) i czy `objectClass` jest poprawnie mapowana.
+
+```bash
+# Wyszukiwanie wszystkich obiektów
+ldapsearch -x -D "cn=manager,ou=local,dc=scisoftware,dc=pl" -W \
+           -b "dc=scisoftware,dc=pl" -s sub "(objectClass=*)" cn uid
+```
+
+**Oczekiwany wynik:** Zostaną zwrócone wszystkie wpisy spełniające warunek, z atrybutami `cn` i `uid`.
+
+## 6. Monitorowanie i rozwiązywanie problemów
+
+### 6.1. Logi OpenLDAP
 
 * **Lokalizacja:** Logi `slapd` są zazwyczaj dostępne poprzez `journalctl -u slapd -f` (na systemach z systemd) lub w plikach systemowych (np. `/var/log/syslog`, `/var/log/daemon.log`).
 * **Poziomy logowania (`olcLogLevel`):**
@@ -540,24 +599,46 @@ OpenLDAP proxy obsługuje różne metody uwierzytelniania:
   * `conn`: Otwieranie/zamykanie połączeń.
   * `any` (`65535`): Wszystko (tylko do głębokiej diagnostyki, bardzo "gadatliwe").
 
-### 5.2. Typowe problemy i rozwiązania
+### 6.2. Typowe problemy i rozwiązania
 
 * **"Invalid GUID" w Apache Directory Studio:** Problem wizualny specyficzny dla Studio, gdy łączy się przez proxy. Wartość jest poprawna w `ldapsearch`. Rozwiązanie: Załadowanie schematów AD (`microsoftad.ldif`) oraz próba reguł `rwm-rewriteRule` (choć to drugie nie zawsze pomagało dla Studio).
 * **Błędy autoryzacji:** Sprawdź `olcAccess` w `cn=config` i logi `slapd` (`olcLogLevel: acl`).
 * **Problemy z połączeniem do backendu:** Sprawdź `olcDbURI`, `olcDbBindDN`, `olcDbBindPW` w konfiguracji `olcMetaSub` oraz dostępność serwera docelowego (firewall, sieć).
 
-### 5.3. Narzędzia diagnostyczne
+### 6.3. Narzędzia diagnostyczne
 
 * `ldapsearch`: Do wykonywania zapytań i weryfikacji danych.
 * `ldapmodify`, `ldapadd`, `ldapdelete`: Do modyfikacji konfiguracji i danych.
 
-### 5.4. Procedury restartu/przeładowania
+### 6.4. Rozwiązywanie problemów
+
+Jeśli napotkasz błędy lub nieoczekiwane zachowanie, poniższe wskazówki pomogą w diagnozowaniu problemów.
+
+#### 6.4.1. Uwierzytelnianie nie działa lub użytkownicy są niewidoczni
+
+* **Sprawdź połączenie z serwerem AD**: Upewnij się, że OpenLDAP proxy może połączyć się z kontrolerem domeny Active Directory. Sprawdź, czy port 389 (lub 636 dla LDAPS) jest otwarty.
+* **Weryfikacja DN administratora**: Sprawdź, czy `olcDbBindDN` i `olcDbBindPW` w pliku `01-setup-meta-backend.ldif` są poprawne. Pamiętaj, że konto administratora AD musi mieć uprawnienia do odczytu całego katalogu.
+* **Poprawność `olcDbMap`**: Upewnij się, że mapowanie `uid` <-> `sAMAccountName` w pliku `06-add-all-dbmap-for-ad-proxy.ldif` jest poprawne. To mapowanie jest kluczowe dla uwierzytelniania w większości systemów Linux/UNIX.
+
+#### 6.4.2. Problemy z atrybutami binarnymi (np. `objectGUID`, `objectSid`)
+
+* **Binarne a tekstowe**: Wartości atrybutów takich jak **`objectGUID`** i **`objectSid`** są danymi binarnymi w Active Directory. Moduł `slapo-rwm` w OpenLDAP nie potrafi konwertować ich na czytelne stringi (np. UUID czy Base64).
+* **Oczekiwanie Base64**: Jeśli używasz narzędzi takich jak `ldapsearch` bez odpowiednich flag, binarne atrybuty mogą być zwracane jako nieczytelne znaki lub z błędem. Narzędzia te często oczekują, że dane binarne będą zakodowane w Base64.
+* **Błąd `handler exited with 1`**: Ten błąd pojawia się, gdy `slapo-rwm` próbuje wykonać operację (np. `md5()` lub `suffix=`) na danych binarnych, których nie potrafi przetworzyć. Oznacza to, że nie da się zmapować `objectGUID` na czytelny string bezpośrednio w konfiguracji proxy. **Rozwiązanie**: Akceptuj binarny charakter tych atrybutów. Twoja aplikacja kliencka musi sama pobrać te dane i przekonwertować je na string UUID. W `ldapsearch` możesz użyć opcji `base64` w poleceniu, aby jawnie zażądać zakodowania wartości.
+
+#### 6.4.3. Błędy podczas uruchamiania kontenera
+
+* **Sprawdzanie logów**: Najważniejszym narzędziem do rozwiązywania problemów są logi kontenera. Użyj `docker-compose logs openldap-proxy` (lub `docker logs <container_id>`), aby zobaczyć komunikaty z serwera `slapd`.
+* **Błędy składni LDIF**: Wszelkie błędy w plikach LDIF (np. niepoprawne spacje, brak `add: `) spowodują, że kontener nie uruchomi się poprawnie. Sprawdź logi pod kątem komunikatów o błędach parsowania.
+* **Problemy z uprawnieniami**: Upewnij się, że pliki konfiguracyjne są dostępne dla użytkownika, pod którym działa kontener Docker.
+
+### 6.5. Procedury restartu/przeładowania
 
 * **Restart usługi slapd:** `systemctl restart slapd` (zalecane po dużych zmianach konfiguracyjnych).
 
-## 6. Kopia zapasowa i odtwarzanie
+## 7. Kopia zapasowa i odtwarzanie
 
-### 6.1. Procedury backupu
+### 7.1. Procedury backupu
 
 * **Konfiguracja `cn=config`:**
 
@@ -573,11 +654,11 @@ ldapsearch -x -H ldapi:/// -b "cn=config" -LLL > /var/backups/openldap_config_$(
 ```
 *(Dostosuj bazę DN do swojej konfiguracji `mdb`.)*
 
-### 6.2. Procedury odtwarzania
+### 7.2. Procedury odtwarzania
 
 *(W razie potrzeby, opis kroków odtwarzania z plików LDIF, np. `slapadd` dla bazy MDB, `ldapadd` dla `cn=config` po świeżej instalacji.)*
 
-## Źródła
+## 8. Źródła
 
 * [Use LDAP Proxy to integrate multiple LDAP servers](https://docs.microfocus.com/doc/425/9.80/configureldapproxy)
 * [OpenLDAP meta backend OLC configuration](https://serverfault.com/questions/866542/openldap-meta-backend-olc-configuration)

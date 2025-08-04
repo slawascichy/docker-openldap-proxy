@@ -517,9 +517,67 @@ The OpenLDAP proxy supports various authentication methods:
 - **Simple Bind**: Authentication via username (DN) and password. Used for testing and many applications.
 - *(Optional: GSSAPI/Kerberos, DIGEST-MD5, if configured.)*
 
-## 5. Monitoring and Troubleshooting
+## 5. Przykłady wyszukiwań i testowania
 
-### 5.1. OpenLDAP Logs
+Once your container is configured, you can use the following sample `ldapsearch` queries to verify that all features are working correctly. Be sure to replace the login credentials and DN values with those from your configuration.
+
+#### Test 1: Search with AD Account Authentication
+
+This test verifies that an Active Directory administrator account can authenticate through the proxy and search for a user.
+
+```bash
+# Authenticate as an AD administrator
+ldapsearch -x -D "cn=Administrator,ou=pluton,dc=scisoftware,dc=pl" -W \
+           -b "ou=pluton,dc=scisoftware,dc=pl" "cn=Administrator" uid userPrincipalName cn
+```
+
+**Expected result:** The server should return the Administrator account details.
+
+-----
+
+#### Test 2: Searching by `uid` and Retrieving Binary Attributes
+
+Verifies that the proxy correctly maps `uid` and returns binary attributes (`objectGUID`). Note that `objectGUID` will be returned in encrypted/unreadable form, as it is a binary attribute.
+
+```bash
+# Searching for a user in AD by `uid`
+ldapsearch -x -D "uid=ldapui,ou=Admins,ou=local,dc=scisoftware,dc=pl" -W \
+           -b "dc=scisoftware,dc=pl" "(uid=slawas)" cn objectGUID
+```
+
+**Expected result:** Returned `cn` and `objectGUID` attributes for user `slawas`. The `objectGUID` value will be unreadable by client tools.
+
+-----
+
+#### Test 3: Searching from a local account and retrieving the `entryuuid`
+
+This test checks whether the account in the local OpenLDAP database (`manager`) can search for a user in Active Directory and retrieve the `entryuuid` attribute (which maps to the `objectGUID` from AD).
+
+```bash
+# Searching from a local account
+ldapsearch -x -D "cn=manager,ou=local,dc=scisoftware,dc=pl" -W \
+           -b "dc=scisoftware,dc=pl" "(uid=slawas)" cn uid entryuuid
+```
+
+**Expected result:** The `cn`, `uid`, and `entryuuid` attributes for the `slawas` user are returned. The `entryuuid` value will be identical to the unreadable `objectGUID` value from the previous test.
+
+-----
+
+#### Test 4: Searching the subtree and checking `objectClass`
+
+This test verifies that the entire subtree can be searched (`-s sub`) and that `objectClass` is mapped correctly.
+
+```bash
+# Searching all objects
+ldapsearch -x -D "cn=manager,ou=local,dc=scisoftware,dc=pl" -W \
+           -b "dc=scisoftware,dc=pl" -s sub "(objectClass=*)" cn uid
+```
+
+**Expected result:** All entries matching the condition, with the `cn` and `uid` attributes, will be returned.
+
+## 6. Monitoring and Troubleshooting
+
+### 6.1. OpenLDAP Logs
 
 * **Location:** `slapd` logs are typically available via `journalctl -u slapd -f` (on systems with systemd) or in system files (e.g., `/var/log/syslog`, `/var/log/daemon.log`).
   * **Log Levels (`olcLogLevel`):**
@@ -530,7 +588,7 @@ The OpenLDAP proxy supports various authentication methods:
   * `conn`: Open/close connections.
   * `any` (`65535`): Everything (only for deep diagnostics, very "verbose").
 
-### 5.2. Common Problems and Solutions
+### 6.2. Common Problems and Solutions
 
 * **"Invalid GUID" in Apache Directory Studio:** A visual issue specific to Studio when connecting through a proxy. The value is correct in `ldapsearch`. Solution: Loading the AD schemas (`microsoftad.ldif`) and trying `rwm-rewriteRule` rules (although the latter didn't always help with Studio).
 
@@ -538,18 +596,40 @@ The OpenLDAP proxy supports various authentication methods:
 
 * **Backend Connection Problems:** Check `olcDbURI`, `olcDbBindDN`, `olcDbBindPW` in the `olcMetaSub` configuration, and the availability of the target server (firewall, network).
 
-### 5.3. Diagnostic Tools
+### 6.3. Diagnostic Tools
 
 * `ldapsearch`: For querying and verifying data.
 * `ldapmodify`, `ldapadd`, `ldapdelete`: For modifying configuration and data.
 
-### 5.4. Restart/Reload Procedures
+### 6.4. Troubleshooting
+
+If you encounter errors or unexpected behavior, the following tips will help diagnose the problem.
+
+#### 6.4.1. Authentication doesn't work or users are invisible
+
+* **Check AD server connection**: Make sure the OpenLDAP proxy can connect to the Active Directory domain controller. Verify that port 389 (or 636 for LDAPS) is open.
+* **Verify administrator DN**: Verify that the `olcDbBindDN` and `olcDbBindPW` in the `01-setup-meta-backend.ldif` file are correct. Note that the AD administrator account must have read permissions for the entire directory. 
+* **`olcDbMap` Validity**: Ensure that the `uid` <-> `sAMAccountName` mapping in the `06-add-all-dbmap-for-ad-proxy.ldif` file is valid. This mapping is crucial for authentication on most Linux/UNIX systems.
+
+#### 6.4.2. Problems with binary attributes (e.g., `objectGUID`, `objectSid`)
+
+* **Binary vs. string**: Attribute values such as **`objectGUID`** and **`objectSid`** are binary data in Active Directory. The `slapo-rwm` module in OpenLDAP cannot convert them to readable strings (e.g., UUID or Base64).
+* **Base64 Expectation**: If you use tools like `ldapsearch` without the appropriate flags, binary attributes may be returned as garbled characters or with an error. These tools often expect binary data to be Base64 encoded.
+* **Error `handler exited with 1`**: This error occurs when `slapo-rwm` attempts to perform an operation (e.g., `md5()` or `suffix=`) on binary data that it cannot process. This means that it is not possible to map `objectGUID` to a readable string directly in the proxy configuration. **Solution**: Accept the binary nature of these attributes. Your client application must fetch this data and convert it to a UUID string itself. In `ldapsearch`, you can use the `base64` option in the command to explicitly request value encoding.
+
+#### 6.4.3. Errors while starting the container
+
+* **Checking the logs**: The most important troubleshooting tool is the container logs. Use `docker-compose logs openldap-proxy` (or `docker logs <container_id>`) to see messages from the `slapd` server.
+* **LDIF syntax errors**: Any errors in the LDIF files (e.g., invalid spaces, missing `add:`) will cause the container to fail to start correctly. Check the logs for parsing error messages.
+* **Permission issues**: Ensure that the configuration files are accessible to the user running the Docker container.
+
+### 6.5. Restart/Reload Procedures
 
 * **Restart the slapd service:** `systemctl restart slapd` (recommended after major configuration changes).
 
-## 6. Backup and Restore
+## 7. Backup and Restore
 
-### 6.1. Backup Procedures
+### 7.1. Backup Procedures
 
 * **Configuration of `cn=config`:**
 
@@ -565,11 +645,11 @@ ldapsearch -x -H ldapi:/// -b "cn=config" -LLL > /var/backups/openldap_config_$(
 ```
 *(Adjust the DN database to your `mdb` configuration.)*
 
-### 6.2. Restoration Procedures
+### 7.2. Restoration Procedures
 
 *(If necessary, description of the steps for restoring from LDIF files, e.g., `slapadd` for the MDB database, `ldapadd` for `cn=config` after a fresh install.)*
 
-## Sources
+## 8. Sources
 
 * [Use LDAP Proxy to integrate multiple LDAP servers](https://docs.microfocus.com/doc/425/9.80/configureldapproxy)
 * [OpenLDAP meta backend OLC configuration](https://serverfault.com/questions/866542/openldap-meta-backend-olc-configuration)
