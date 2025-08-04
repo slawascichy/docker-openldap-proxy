@@ -4,52 +4,66 @@ echo "**************************"
 echo "* Starting OpenLDAP Server "
 echo "**************************"
 
+export WORKSPACE=/opt/modify
+export LOG_FILE=/var/log/slapd.log
 export SLAPD_URLS="ldap:/// ldapi:/// ldaps:///"
 export SLAPD_OPTIONS="/etc/ldap/slapd.d"
 export LDAP_INIT_FILE=/etc/ldap/slapd.conf
-export LDAP_CREATE_MDB_FILE=/etc/ldap/mdbdatabase-create.ldif
-export LDAP_CREATE_META_FILE=/etc/ldap/metadatabase-create.ldif
-export WORKSPACE=/opt/modify
-export LDAP_INIT_FLAG_FILE=/var/lib/ldap/ldap.init
+export LDAP_DB_DIR=/var/lib/ldap
+export CREATION_LOG_FILE=${LDAP_DB_DIR}/create_db.log
+export LDAP_CREATE_MDB_FILE=${LDAP_DB_DIR}/mdbdatabase-create.ldif
+export LDAP_CREATE_META_FILE=${LDAP_DB_DIR}/metadatabase-create.ldif
+export LDAP_INIT_FLAG_FILE=${LDAP_DB_DIR}/ldap.init
 ulimit -n 8192
-
+touch $LOG_FILE
 
 initDatabase() {
     export LDAP_ROOT_PASSWD_ENCRYPTED=`slappasswd -h {SSHA} -s $LDAP_ROOT_PASSWD_PLAINTEXT`
     echo "Init slapd.conf..."
-    rm -rf /var/lib/ldap/*
+    rm -rf ${LDAP_DB_DIR}/*
 	rm -rf $SLAPD_OPTIONS/*
     cat /opt/init/01-slapd.conf | envsubst > $LDAP_INIT_FILE
 
     echo "Starting LDAP..."
-    slaptest -f $LDAP_INIT_FILE -F $SLAPD_OPTIONS    
-    chown -R openldap:openldap /var/lib/ldap
-    chown -R openldap:openldap /etc/ldap/slapd.d
-    /usr/sbin/slapd -u openldap -g openldap -h "$SLAPD_URLS" -F $SLAPD_OPTIONS
+    slaptest -f $LDAP_INIT_FILE -F $SLAPD_OPTIONS
+    mkdir -p ${LDAP_DB_DIR}/local
+    mkdir -p ${LDAP_DB_DIR}/subordinate
+    chown -R openldap:openldap ${LDAP_DB_DIR}
+    chown -R openldap:openldap ${SLAPD_OPTIONS}
+    /usr/sbin/slapd -u openldap -g openldap -h "$SLAPD_URLS" -F $SLAPD_OPTIONS 
       
-    echo "Applay init scripts START"
+    START_MSG="## Applay init scripts START ###################################################"
+    echo ${START_MSG}
+    echo ${START_MSG} > ${CREATION_LOG_FILE}
     cat /opt/init/02-mdbdatabase-create.ldif | envsubst > $LDAP_CREATE_MDB_FILE
-    ldapadd -Y EXTERNAL -H ldapi:/// -f  $LDAP_CREATE_MDB_FILE
+    ldapadd -Y EXTERNAL -H ldapi:/// -f  $LDAP_CREATE_MDB_FILE >> ${CREATION_LOG_FILE}
     cat /opt/init/03-metadatabase-create.ldif | envsubst > $LDAP_CREATE_META_FILE
-    ldapadd -Y EXTERNAL -H ldapi:/// -f  $LDAP_CREATE_META_FILE
+    ldapadd -Y EXTERNAL -H ldapi:/// -f  $LDAP_CREATE_META_FILE >> ${CREATION_LOG_FILE}
     
     cd $WORKSPACE
     export LDAP_TECHNICAL_USER_ENCRYPTED=`slappasswd -h {SSHA} -s $LDAP_TECHNICAL_USER_PASSWD`
     
-    echo "Run base.ldif..."
-    LDIF_FILE=$WORKSPACE/base.ldif
+    START_MSG="-->Run base.ldif..."
+    echo ${START_MSG}
+    echo ${START_MSG} >> ${CREATION_LOG_FILE}
+    LDIF_FILE=$LDAP_DB_DIR/base.ldif
     cat $WORKSPACE/base.ldif.docker-init | envsubst > $LDIF_FILE
-    ldapadd -Y EXTERNAL -H ldapi:/// -f $LDIF_FILE
+    ldapadd -Y EXTERNAL -H ldapi:/// -f $LDIF_FILE >> ${CREATION_LOG_FILE}
     
-    echo "Run sample-entries.ldif..."
-    LDIF_FILE=$WORKSPACE/sample-entries.ldif
+    echo 
+    START_MSG="-->Run sample-entries.ldif..."
+    echo ${START_MSG}
+    echo ${START_MSG} >> ${CREATION_LOG_FILE}
+    LDIF_FILE=$LDAP_DB_DIR/sample-entries.ldif
     cat $WORKSPACE/sample-entries.ldif.docker-init | envsubst > $LDIF_FILE
-    ldapadd -Y EXTERNAL -H ldapi:/// -f $LDIF_FILE
+    ldapadd -Y EXTERNAL -H ldapi:/// -f $LDIF_FILE >> ${CREATION_LOG_FILE}
     
     touch $LDAP_INIT_FLAG_FILE
     SLAPD_PID=`cat /var/run/slapd/slapd.pid`
     kill $SLAPD_PID
-    echo "Applay init scripts END"
+    START_MSG="## Applay init scripts END #####################################################"
+    echo ${START_MSG}
+    echo ${START_MSG} >> ${CREATION_LOG_FILE}
 
 }
 
@@ -105,8 +119,6 @@ setTLS
 # | 32768 | (0x8000 none)   | only messages that get logged whatever log level is set   |
 # +=======+=================+===========================================================+
 
-export LOG_FILE=/var/log/slapd.log
-touch $LOG_FILE
 echo "Starting LDAP deamon..."
 /usr/sbin/slapd -u openldap -g openldap -d $SERVER_DEBUG -h "$SLAPD_URLS" -F $SLAPD_OPTIONS >> $LOG_FILE 2>&1 &
 tail -f $LOG_FILE
