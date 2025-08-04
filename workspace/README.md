@@ -46,7 +46,7 @@ Jeśli chcesz mapować atrybut uid (używany przez Twoich lokalnych klientów) n
 ```ldif
 # Przykład pliku LDIF do modyfikacji
 # Plik: map_attributes.ldif
-dn: olcMetaSub={1}ibpm,olcDatabase={3}meta,cn=config
+dn: olcMetaSub={1}ibpm,olcDatabase={4}meta,cn=config
 changetype: modify
 add: olcDbMap
 olcDbMap: attribute uid sAMAccountName
@@ -56,7 +56,7 @@ olcDbMap: attribute uid sAMAccountName
 
 Przygotuj plik LDIF (np. `map_attributes.ldif`) z powyższą zawartością.
 
-- Pamiętaj o poprawnym DN: `olcMetaSub={1}ibpm,olcDatabase={3}meta,cn=config`. Indeks `{3}` dla meta jest tu przykładowy, upewnij się, że używasz swojego indeksu bazy meta.
+- Pamiętaj o poprawnym DN: `olcMetaSub={1}ibpm,olcDatabase={4}meta,cn=config`. Indeks `{3}` dla meta jest tu przykładowy, upewnij się, że używasz swojego indeksu bazy meta.
 - Cała linia `olcDbMap: attribute uid sAMAccountName` musi być w jednej linii w pliku LDIF.
 
 Zastosuj plik LDIF za pomocą `ldapmodify`:
@@ -71,7 +71,7 @@ Możesz mieć wiele mapowań w jednym wpisie `olcMetaSub`. Każde mapowanie będ
 ```ldif
 # Przykład pliku LDIF z wieloma mapowaniami
 # Plik: map_multiple_attributes.ldif
-dn: olcMetaSub={1}ibpm,olcDatabase={3}meta,cn=config
+dn: olcMetaSub={1}ibpm,olcDatabase={4}meta,cn=config
 changetype: modify
 add: olcDbMap
 olcDbMap: attribute uid sAMAccountName
