@@ -176,9 +176,34 @@ Wszystkie powyższe informacje można uzyskać wydając polecenie:
 ```
 
 > [!IMPORTANT]
-> Zanim wydasz plecenie dodania bazy wpierw przetestuj połączenie do niej. Użyj opcji `--test` podczas pierwszego uruchomienia skryptu.
+> Zanim wydasz komendę dodania bazy wpierw przetestuj czy definicja połączenia do niej jest poprawna. Użyj opcji `--test` podczas pierwszego uruchomienia skryptu.
 
+> [!IMPORTANT]
+> Definiując połączenia do AD używaj opcji `--addADAttributesMapping`. Jeżeli zapomnisz, to się nie martw. Zawsze możesz później uruchomić skrypt `./add-mapping-of-attribute-names-AD-to-OpenLDAP.sh <nazwa_jednostki_organizacyjnej>`.
 
+Przykład 1:
+
+```bash Testowanie połączenia do AD o nazwie "pluton"
+./add-proxy-to-external-ldap.sh \
+  BIND_LDAP_URI=ldap://pluton.example.com \
+  BIND_DN=CN="proxyadmin,OU=ServiceAccounts,DC=example,DC=local"\
+  BIND_PASSWD_PLAINTEXT="secret" \
+  BIND_BASE_CTX_SEARCH=CN=Users,DC=example,DC=local \
+  LDAP_PROXY_OU_NAME=pluton --addADAttributesMapping --test 
+```
+* dodanie połączenia nastąpi po uruchomieniu powyższego polecenia bez opcji `--test`.
+
+Przykład 2:
+
+```bash Testowanie połączenia do OpenLDAP o nazwie "ibpm"
+./add-proxy-to-external-ldap.sh \
+  BIND_LDAP_URI=ldaps://192.168.1.123:9636 \
+  BIND_DN=cn=GIToperator,ou=technical,dc=ibpm,dc=example \
+  BIND_PASSWD_PLAINTEXT=secret \
+  BIND_BASE_CTX_SEARCH=ou=ibpm.pro,dc=ibpm,dc=example \
+  LDAP_PROXY_OU_NAME=ibpm --test
+```
+* dodanie połączenia nastąpi po uruchomieniu powyższego polecenia bez opcji `--test`.
 
 ### 2.4. Pliki LDIF użyte do konfiguracji
 
