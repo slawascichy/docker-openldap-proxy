@@ -431,7 +431,7 @@ Attribute mapping between OpenLDAP and Active Directory is intended to normalize
 
 ### 3.3. GUID/SID Support
 
-The 'objectGUID` and 'objectSid` attributes are binary attributes specific to Active Directory. We haven't yet been able to resolve the issue of correctly mapping the 'objectGUID` field (AD) to the 'entryUIID` field (OpenLDAP).' I've started a thread on [objectGUID to entryUUID mapping in OpenLDAP proxy with AD](https://serverfault.com/questions/1190133/objectguid-to-entryUUID-mapping-in-openldap-proxy-with-AD) - we'll see if someone can solve the problem.
+The `objectGUID` and `objectSid` attributes are binary attributes specific to Active Directory. We haven't yet been able to resolve the issue of correctly mapping the `objectGUID` field (AD) to the `entryUIID` field (OpenLDAP). I've started a thread on [objectGUID to entryUUID mapping in OpenLDAP proxy with AD](https://serverfault.com/questions/1190133/objectguid-to-entryUUID-mapping-in-openldap-proxy-with-AD) - we'll see if someone can solve the problem.
 
 ## 4. Authentication and Authorization
 
@@ -517,7 +517,7 @@ The OpenLDAP proxy supports various authentication methods:
 - **Simple Bind**: Authentication via username (DN) and password. Used for testing and many applications.
 - *(Optional: GSSAPI/Kerberos, DIGEST-MD5, if configured.)*
 
-## 5. Przykłady wyszukiwań i testowania
+## 5. Search and Test Examples
 
 Once your container is configured, you can use the following sample `ldapsearch` queries to verify that all features are working correctly. Be sure to replace the login credentials and DN values with those from your configuration.
 

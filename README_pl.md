@@ -443,7 +443,6 @@ Mapowanie atrybutów między OpenLDAP a Active Directory ma na celu normalizacj�
 
 Atrybuty `objectGUID` i `objectSid` są atrybutami binarnymi specyficznymi dla Active Directory. Na razie nie udało się rozwiązać problemu prawidłowego mapowania pola `objectGUID` (AD) do `entryUIID` (OpenLDAP). Otworzyłem wątek [objectGUID to entryUUID mapping in Openldap proxy with AD](https://serverfault.com/questions/1190133/objectguid-to-entryuuid-mapping-in-openldap-proxy-with-ad) - zobaczymy może komuś uda się rozwiązać problem. 
 
-
 ## 4. Uwierzytelnianie i autoryzacja
 
 ### 4.1. ACL (Access Control Lists) - `olcAccess`
