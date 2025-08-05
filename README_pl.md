@@ -226,15 +226,63 @@ Poniżej znajduje się lista kluczowych plików LDIF użytych do konfiguracji se
 > [!NOTE]
 > W ramach dostosowania schematu `core` zmieniono definicję atrybutu `uniqueMember`. Oryginalnie jest on w.g RFC2256 definicją unikalnego członka grupy i jest typu "Nazwa lub unikalny UID" `1.3.6.1.4.1.1466.115.121.1.34 - Name and Optional UID syntax`. Jednakże typ ten nie jest tłumaczony z wartości zewnętrznej bazy danych na lokalny podczas działania proxy. Dlatego zmieniono jedgo definicje na `( 2.5.4.50 NAME 'uniqueMember' DESC 'RFC2256: unique member of a group' EQUALITY distinguishedNameMatch SUP distinguishedName )`.
 
+#### 2.6.1. Schemat atrybutów AD
 
-#### 2.6.1. Schemat atrybutów CSZU
+Schemat pozwalający na reprezentacje w ramach serwera OpenLDAP atrybutów o nazwach pochodzących AD. Zawiera definicje klas obiektów o nazwach `aDPerson`, `groupOfMembers`, `team`, `container`, `group` oraz `user`:
+
+<details>
+<summary>schemas\002-ADPerson.ldif</summary>
+
+```ldif
+#
+# Substitute for MS Active Directory schema
+#
+# created by: Sławomir Cichy (slawas@slawas.pl)
+# Only required attributes from Microsoft's schemas
+#
+dn: cn=adperson,cn=schema,cn=config
+objectClass: olcSchemaConfig
+cn: adperson
+#
+olcAttributeTypes: ( 1.2.840.113556.1.4.221 NAME 'sAMAccountName' EQUALITY caseIgnoreMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.656 NAME 'userPrincipalName' EQUALITY caseIgnoreMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.657 NAME 'msExchUserCulture' EQUALITY caseIgnoreMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.2.146 NAME 'company' EQUALITY caseIgnoreMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15'  SINGLE-VALUE )     
+olcAttributeTypes: ( 1.2.840.113556.1.4.35  NAME 'employeeID' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.2 NAME 'objectGUID' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.146 NAME 'objectSid' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
+olcAttributeTypes: ( 2.16.840.1.113730.3.1.35 NAME 'thumbnailPhoto' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.90 NAME 'unicodePwd' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.159 NAME 'accountExpires' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.96 NAME'pwdLastSet' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
+olcAttributeTypes: ( 1.1.2.1.1 NAME 'department' DESC 'Department Name' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+# Original ( 1.2.840.113556.1.2.102 NAME 'memberOf' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' NO-USER-MODIFICATION )
+olcAttributeTypes: ( 1.2.840.113556.1.2.102 NAME 'memberOf' SUP distinguishedName )
+##################################################
+# Custom polish MPK fields - START
+olcAttributeTypes: ( 1.2.840.113556.1.4.700 NAME 'MPK1Name' DESC 'Name of the first cost center - MPK (Cost Center)' EQUALITY caseIgnoreMatch  SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.701 NAME 'MPK1Code' DESC 'Code of the first cost center - MPK (Cost Center)' EQUALITY caseIgnoreMatch  SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.702 NAME 'MPK2Name' DESC 'Name of the second cost center - MPK (Cost Center)' EQUALITY caseIgnoreMatch  SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+olcAttributeTypes: ( 1.2.840.113556.1.4.703 NAME 'MPK2Code' DESC 'Code of the second cost center - MPK (Cost Center)' EQUALITY caseIgnoreMatch  SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+# Custom polish MPK fields - START
+##################################################
+olcObjectClasses: ( 1.2.840.113556.1.4.220 NAME 'aDPerson' DESC 'MS Active Directory Person Entry' SUP inetOrgPerson  STRUCTURAL MUST ( uid $ sAMAccountName ) MAY ( userPrincipalName $ msExchUserCulture $ MPK1Code $ MPK1Name $ MPK2Code $ MPK2Name $ userPassword $ company $ employeeID $ objectGUID $ objectSid $ thumbnailPhoto $ unicodePwd $ accountExpires $ pwdLastSet $ department) )
+olcObjectClasses: ( 1.2.840.113556.1.4.803 NAME 'groupOfMembers' DESC 'MS Active Directory group entry' SUP top STRUCTURAL MUST ( cn ) MAY ( cn $ mail $ name $ displayName $ description $ manager $ member $ memberOf $ sAMAccountName $ objectGUID $ objectSid ) X-ORIGIN 'AD Group' )
+olcObjectClasses: ( 1.2.840.113556.1.4.804 NAME 'team' DESC 'MS Active Directory group entry with required common name and display name' SUP top STRUCTURAL MUST ( cn $ displayName ) MAY ( mail $ name $ description $ manager $ member $ memberOf $ sAMAccountName $ objectGUID $ objectSid ) X-ORIGIN 'AD Group' )
+olcObjectClasses: ( 1.2.840.113556.1.3.23 NAME 'container' SUP top STRUCTURAL MUST (cn ) )
+olcObjectClasses: ( 1.2.840.113556.1.5.8 NAME 'group' SUP top STRUCTURAL MUST (cn $ sAMAccountName ) )
+olcObjectClasses: ( 1.2.840.113556.1.5.9 NAME 'user' SUP inetOrgPerson STRUCTURAL MUST ( uid $ sAMAccountName ) )
+```
+</details>
+
+#### 2.6.2. Schemat atrybutów CSZU
 
 **CSZU** (polski skrót od Centralny System Zarządzania Użytkownikami) - to autorski system repozytorium użytkowników. Załadowana schema zawiera definicje klas obiektów o nazwach `cszuAttrs`, `cszuPrivs`, `cszuUser` oraz `cszuGroup`:
 
 <details>
 <summary>schemas\005-cszu.ldif</summary>
 
-```text
+```ldif
 #
 # Author's scheme supporting the Central User Management System 
 # (Centralny System Zarządzania Użytkownikami - CSZU)
@@ -281,55 +329,6 @@ olcObjectClasses: ( 1.3.6.1.4.1.2021.3.1.1 NAME 'cszuUser' DESC 'Attributes used
 olcObjectClasses: ( 1.3.6.1.4.1.2021.3.2.1 NAME 'cszuGroup' DESC 'Attributes used by CSZU for group entries' SUP cszuAttrs AUXILIARY MUST ( cn $ managerGroup ) MAY ( mail $ name $ displayName $ description $ manager $ member $ memberOf))
 ```
 
-</details>
-
-#### 2.6.2. Schemat atrybutów AD
-
-Schemat pozwalający na reprezentacje w ramach serwera OpenLDAP atrybutów o nazwach pochodzących AD. Zawiera definicje klas obiektów o nazwach `aDPerson`, `groupOfMembers`, `team`, `container`, `group` oraz `user`:
-
-<details>
-<summary>schemas\002-ADPerson.ldif</summary>
-
-```text
-#
-# Substitute for MS Active Directory schema
-#
-# created by: Sławomir Cichy (slawas@slawas.pl)
-# Only required attributes from Microsoft's schemas
-#
-dn: cn=adperson,cn=schema,cn=config
-objectClass: olcSchemaConfig
-cn: adperson
-#
-olcAttributeTypes: ( 1.2.840.113556.1.4.221 NAME 'sAMAccountName' EQUALITY caseIgnoreMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
-olcAttributeTypes: ( 1.2.840.113556.1.4.656 NAME 'userPrincipalName' EQUALITY caseIgnoreMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
-olcAttributeTypes: ( 1.2.840.113556.1.4.657 NAME 'msExchUserCulture' EQUALITY caseIgnoreMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
-olcAttributeTypes: ( 1.2.840.113556.1.2.146 NAME 'company' EQUALITY caseIgnoreMatch SYNTAX '1.3.6.1.4.1.1466.115.121.1.15'  SINGLE-VALUE )     
-olcAttributeTypes: ( 1.2.840.113556.1.4.35  NAME 'employeeID' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
-olcAttributeTypes: ( 1.2.840.113556.1.4.2 NAME 'objectGUID' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
-olcAttributeTypes: ( 1.2.840.113556.1.4.146 NAME 'objectSid' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
-olcAttributeTypes: ( 2.16.840.1.113730.3.1.35 NAME 'thumbnailPhoto' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
-olcAttributeTypes: ( 1.2.840.113556.1.4.90 NAME 'unicodePwd' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
-olcAttributeTypes: ( 1.2.840.113556.1.4.159 NAME 'accountExpires' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
-olcAttributeTypes: ( 1.2.840.113556.1.4.96 NAME'pwdLastSet' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
-olcAttributeTypes: ( 1.1.2.1.1 NAME 'department' DESC 'Department Name' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
-# Original ( 1.2.840.113556.1.2.102 NAME 'memberOf' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' NO-USER-MODIFICATION )
-olcAttributeTypes: ( 1.2.840.113556.1.2.102 NAME 'memberOf' SUP distinguishedName )
-##################################################
-# Custom polish MPK fields - START
-olcAttributeTypes: ( 1.2.840.113556.1.4.700 NAME 'MPK1Name' DESC 'Name of the first cost center - MPK (Cost Center)' EQUALITY caseIgnoreMatch  SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
-olcAttributeTypes: ( 1.2.840.113556.1.4.701 NAME 'MPK1Code' DESC 'Code of the first cost center - MPK (Cost Center)' EQUALITY caseIgnoreMatch  SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
-olcAttributeTypes: ( 1.2.840.113556.1.4.702 NAME 'MPK2Name' DESC 'Name of the second cost center - MPK (Cost Center)' EQUALITY caseIgnoreMatch  SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
-olcAttributeTypes: ( 1.2.840.113556.1.4.703 NAME 'MPK2Code' DESC 'Code of the second cost center - MPK (Cost Center)' EQUALITY caseIgnoreMatch  SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
-# Custom polish MPK fields - START
-##################################################
-olcObjectClasses: ( 1.2.840.113556.1.4.220 NAME 'aDPerson' DESC 'MS Active Directory Person Entry' SUP inetOrgPerson  STRUCTURAL MUST ( uid $ sAMAccountName ) MAY ( userPrincipalName $ msExchUserCulture $ MPK1Code $ MPK1Name $ MPK2Code $ MPK2Name $ userPassword $ company $ employeeID $ objectGUID $ objectSid $ thumbnailPhoto $ unicodePwd $ accountExpires $ pwdLastSet $ department) )
-olcObjectClasses: ( 1.2.840.113556.1.4.803 NAME 'groupOfMembers' DESC 'MS Active Directory group entry' SUP top STRUCTURAL MUST ( cn ) MAY ( cn $ mail $ name $ displayName $ description $ manager $ member $ memberOf $ sAMAccountName $ objectGUID $ objectSid ) X-ORIGIN 'AD Group' )
-olcObjectClasses: ( 1.2.840.113556.1.4.804 NAME 'team' DESC 'MS Active Directory group entry with required common name and display name' SUP top STRUCTURAL MUST ( cn $ displayName ) MAY ( mail $ name $ description $ manager $ member $ memberOf $ sAMAccountName $ objectGUID $ objectSid ) X-ORIGIN 'AD Group' )
-olcObjectClasses: ( 1.2.840.113556.1.3.23 NAME 'container' SUP top STRUCTURAL MUST (cn ) )
-olcObjectClasses: ( 1.2.840.113556.1.5.8 NAME 'group' SUP top STRUCTURAL MUST (cn $ sAMAccountName ) )
-olcObjectClasses: ( 1.2.840.113556.1.5.9 NAME 'user' SUP inetOrgPerson STRUCTURAL MUST ( uid $ sAMAccountName ) )
-```
 </details>
 
 ### 2.7 Predefiniowane wpisy w lokalnej bazie
