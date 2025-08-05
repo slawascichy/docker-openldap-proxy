@@ -618,7 +618,7 @@ If you encounter errors or unexpected behavior, the following tips will help dia
 
 * **Binary vs. string**: Attribute values such as **`objectGUID`** and **`objectSid`** are binary data in Active Directory. The `slapo-rwm` module in OpenLDAP cannot convert them to readable strings (e.g. UUID or Base64).
 * **Base64 Expectation**: If you use tools like `ldapsearch` without the appropriate flags, binary attributes may be returned as garbled characters or with an error. These tools often expect binary data to be Base64 encoded.
-* **Error `handler exited with 1`**: This error occurs when `slapo-rwm` attempts to perform an operation (e.g., `md5()` or `suffix=`) on binary data that it cannot process. This means that it is not possible to map `objectGUID` to a readable string directly in the proxy configuration. **Solution**: Accept the binary nature of these attributes. Your client application must fetch this data and convert it to a UUID string itself. In `ldapsearch`, you can use the `base64` option in the command to explicitly request value encoding.
+* **Error `handler exited with 1`**: This error occurs when `slapo-rwm` attempts to perform an operation (e.g. `md5()` or `suffix=`) on binary data that it cannot process. This means that it is not possible to map `objectGUID` to a readable string directly in the proxy configuration. **Solution**: Accept the binary nature of these attributes. Your client application must fetch this data and convert it to a UUID string itself. In `ldapsearch`, you can use the `base64` option in the command to explicitly request value encoding.
 
 #### 6.4.3. Repository Configuration Issues in IBM WebSphere
 
