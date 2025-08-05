@@ -673,7 +673,7 @@ ldapsearch -x -H ldapi:/// -b "cn=config" -LLL > /var/backups/openldap_config_$(
 
 ### 7.2. Restoration Procedures
 
-*(If necessary, description of the steps for restoring from LDIF files, e.g. `slapadd` for the MDB database, `ldapadd` for `cn=config` after a fresh install.)*
+*(If necessary, description of the steps for restoring from LDIF files, e.g. `slapadd` for the `mdb` database, `ldapadd` for `cn=config` after a fresh install.)*
 
 ## 8. Sources
 

@@ -679,7 +679,7 @@ ldapsearch -x -H ldapi:/// -b "cn=config" -LLL > /var/backups/openldap_config_$(
 
 ### 7.2. Procedury odtwarzania
 
-*(W razie potrzeby, opis kroków odtwarzania z plików LDIF, np. `slapadd` dla bazy MDB, `ldapadd` dla `cn=config` po świeżej instalacji.)*
+*(W razie potrzeby, opis kroków odtwarzania z plików LDIF, np. `slapadd` dla bazy `mdb`, `ldapadd` dla `cn=config` po świeżej instalacji.)*
 
 ## 8. Źródła
 
