@@ -647,7 +647,7 @@ After starting, we can verify in the WebSphere console whether users from each c
 
 ### 6.5. Restart/Reload Procedures
 
-Starting, stopping, and restarting operations are available in the container console, which is accessible using the command `docker exec -it ${CONTAINER_ID} bash`, where `CONTAINER_ID` is the ID of our container from `openldap-proxy` obtained using the command `docker container ls`.
+Starting, stopping, and restarting operations are available in the container console, which is accessible using the command `docker exec -it ${CONTAINER_ID} bash`, where `CONTAINER_ID` is the ID of our container with `openldap-proxy` obtained using the command `docker container ls`.
 
 * **Restarting the slapd service:** `/opt/service/slapd-service.sh restart` (recommended after major configuration changes).
 * **Starting the slapd service:** `/opt/service/slapd-service.sh start`.
