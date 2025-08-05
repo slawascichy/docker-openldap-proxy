@@ -65,10 +65,11 @@ RUN chmod a-x /etc/ldap/schema/* \
  && chmod 640 /etc/ldap/ldap.conf \
  && rm -rf /tmp/* \
  && rm -rf /var/tmp/* \
- && chmod a+x /opt/service/startServer.sh \
+ && chmod a+x /opt/service/slapd-service.sh \
+ && chmod a+x /opt/service/start-server.sh \
  && chmod a+x /opt/service/add-proxy-to-external-ldap.sh
 
 VOLUME ["/var/lib/ldap", "/etc/ldap/slapd.d"]
 EXPOSE 80 389 636
 WORKDIR /opt/service
-CMD ["/bin/sh", "-c", "/opt/service/startServer.sh"]
+CMD ["/bin/sh", "-c", "/opt/service/start-server.sh"]

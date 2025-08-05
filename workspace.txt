@@ -61,8 +61,8 @@ phpldapadmin-conf
 # -----------------------
 # 1. Robimy tag obrazu z kontenera
 docker container ls
-docker container commit bd966850f461 openldap-proxy:latest
-#                 gdzie bd966850f461 to identyfikator działającego kontenera
+docker container commit f4ac0f91c4c9 openldap-proxy:latest
+#                 gdzie f4ac0f91c4c9 to identyfikator działającego kontenera
 # 2. Tworzymy docelowy tag obrazu (przykład)
 docker image tag openldap-proxy:latest scisoftware/openldap-proxy:latest
 docker image tag openldap-proxy:latest scisoftware/openldap-proxy:ubuntu-24.04

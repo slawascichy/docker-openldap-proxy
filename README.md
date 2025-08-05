@@ -582,8 +582,8 @@ ldapsearch -x -D "cn=manager,ou=local,dc=scisoftware,dc=pl" -W \
 
 ### 6.1. OpenLDAP Logs
 
-* **Location:** `slapd` logs are typically available via `journalctl -u slapd -f` (on systems with systemd) or in system files (e.g. `/var/log/syslog`, `/var/log/daemon.log`).
-  * **Log Levels (`olcLogLevel`):**
+* **Location:** `slapd` logs in the container are available in the system file `/var/log/slapd.log`.
+* **Log Levels (`olcLogLevel`):**
   * `none`: No logs (not recommended).
   * `stats`: Basic statistics (recommended in production).
   * `acl`: ACL decision logging (useful for debugging permissions).
@@ -594,9 +594,7 @@ ldapsearch -x -D "cn=manager,ou=local,dc=scisoftware,dc=pl" -W \
 ### 6.2. Common Problems and Solutions
 
 * **"Invalid GUID" in Apache Directory Studio:** A visual issue specific to Studio when connecting through a proxy. The value is correct in `ldapsearch`. Solution: Loading the AD schemas (`microsoftad.ldif`) and trying `rwm-rewriteRule` rules (although the latter didn't always help with Studio).
-
 * **Authorization Errors:** Check `olcAccess` in `cn=config` and `slapd` logs (`olcLogLevel: acl`).
-
 * **Backend Connection Problems:** Check `olcDbURI`, `olcDbBindDN`, `olcDbBindPW` in the `olcMetaSub` configuration, and the availability of the target server (firewall, network).
 
 ### 6.3. Diagnostic Tools
@@ -649,7 +647,11 @@ After starting, we can verify in the WebSphere console whether users from each c
 
 ### 6.5. Restart/Reload Procedures
 
-* **Restart the slapd service:** `systemctl restart slapd` (recommended after major configuration changes).
+Starting, stopping, and restarting operations are available in the container console, which is accessible using the command `docker exec -it ${CONTAINER_ID} bash`, where `CONTAINER_ID` is the ID of our container from `openldap-proxy` obtained using the command `docker container ls`.
+
+* **Restarting the slapd service:** `/opt/service/slapd-service.sh restart` (recommended after major configuration changes).
+* **Starting the slapd service:** `/opt/service/slapd-service.sh start`.
+* **Stopping the slapd service:** `/opt/service/slapd-service.sh stop`.
 
 ## 7. Backup and Restore
 

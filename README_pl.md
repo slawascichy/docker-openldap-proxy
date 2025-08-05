@@ -588,7 +588,7 @@ ldapsearch -x -D "cn=manager,ou=local,dc=scisoftware,dc=pl" -W \
 
 ### 6.1. Logi OpenLDAP
 
-* **Lokalizacja:** Logi `slapd` są zazwyczaj dostępne poprzez `journalctl -u slapd -f` (na systemach z systemd) lub w plikach systemowych (np. `/var/log/syslog`, `/var/log/daemon.log`).
+* **Lokalizacja:** Logi `slapd` w kontenerze dostępne w pliku systemowym `/var/log/slapd.log`.
 * **Poziomy logowania (`olcLogLevel`):**
   * `none`: Brak logów (niezalecane).
   * `stats`: Podstawowe statystyki (zalecane na produkcji).
@@ -653,7 +653,11 @@ Po wystartowaniu w konsoli WebSphere możemy zweryfikować, czy widoczni są uż
 
 ### 6.5. Procedury restartu/przeładowania
 
-* **Restart usługi slapd:** `systemctl restart slapd` (zalecane po dużych zmianach konfiguracyjnych).
+Operacje startowania, zatrzymywania i restartu dostępne się w konsoli kontenera, która dostępna jest za pomocą polecenia `docker exec -it ${CONTAINER_ID} bash` gdzie `CONTAINER_ID` to identyfikator naszego kontenera z `openldap-proxy` uzyskany za pomoca polecenia `docker container ls`  
+
+* **Restart usługi slapd:** `/opt/service/slapd-service.sh restart` (zalecane po dużych zmianach konfiguracyjnych).
+* **Wystartowanie usługi slapd:** `/opt/service/slapd-service.sh start`.
+* **Zatrzymanie usługi slapd:** `/opt/service/slapd-service.sh stop`.
 
 ## 7. Kopia zapasowa i odtwarzanie
 

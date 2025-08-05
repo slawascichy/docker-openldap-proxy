@@ -1,8 +1,5 @@
 #!/bin/bash
 set -o pipefail
-echo "**************************"
-echo "* Starting OpenLDAP Server "
-echo "**************************"
 
 export WORKSPACE=/opt/modify
 export LOG_FILE=/var/log/slapd.log
@@ -85,40 +82,52 @@ TLS_REQCERT    never
 EOF
 }
 
-# Before starting - START
-DIR=/var/lib/ldap
-if [ "$(ls -A $LDAP_INIT_FLAG_FILE)" ]; then
-    echo "Database is ready."
-else
-    echo "Init database..."
-    initDatabase
-fi
-# Setting TLS for communication for LDAP clients
-setTLS
-# Before starting - END
+start() 
+{
+	echo "**************************"
+	echo "* Starting OpenLDAP Server "
+	echo "**************************"
 
-# Debugging Levels
-# +=======+=================+===========================================================+
-# | Level |    Keyword      | Description                                               |
-# +=======+=================+===========================================================+
-# | -1    | any             | enable all debugging                                      |
-# | 0     |                 | no debugging                                              |
-# | 1     | (0x1 trace)     | trace function calls                                      |
-# | 2     | (0x2 packets)   | debug packet handling                                     |
-# | 4     | (0x4 args)      | heavy trace debugging                                     |
-# | 8     | (0x8 conns)     | connection management                                     |
-# | 16    | (0x10 BER)      | print out packets sent and received                       |
-# | 32    | (0x20 filter)   | search filter processing                                  |
-# | 64    | (0x40 config)   | configuration processing                                  |
-# | 128   | (0x80 ACL)      | access control list processing                            |
-# | 256   | (0x100 stats)   | stats log connections/operations/result                   |
-# | 512   | (0x200 stats2)  | stats log entries sent                                    |
-# | 1024  | (0x400 shell)   | print communication with shell backends                   |
-# | 2048  | (0x800 parse)   | print entry parsing debugging                             |
-# | 16384 | (0x4000 sync)   | syncrepl consumer processing                              |
-# | 32768 | (0x8000 none)   | only messages that get logged whatever log level is set   |
-# +=======+=================+===========================================================+
+	# Before starting - START
+	DIR=/var/lib/ldap
+	if [ "$(ls -A $LDAP_INIT_FLAG_FILE)" ]; then
+	    echo "Database is ready."
+	else
+	    echo "Init database..."
+	    initDatabase
+	fi
+	# Setting TLS for communication for LDAP clients
+	setTLS
+	# Before starting - END
 
-echo "Starting LDAP deamon..."
-/usr/sbin/slapd -u openldap -g openldap -d $SERVER_DEBUG -h "$SLAPD_URLS" -F $SLAPD_OPTIONS >> $LOG_FILE 2>&1 &
-tail -f $LOG_FILE
+	echo "Starting LDAP deamon..."
+	/usr/sbin/slapd -u openldap -g openldap -d $SERVER_DEBUG -h "$SLAPD_URLS" -F $SLAPD_OPTIONS >> $LOG_FILE 2>&1 &
+	echo "Done"
+}
+
+stop()
+{
+	echo "**************************"
+	echo "* Stopping OpenLDAP Server "
+	echo "**************************"
+	SLAPD_PID=`cat /var/run/slapd/slapd.pid`
+	kill -INT ${SLAPD_PID}
+	echo "Done"
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart}"
+esac
+
+exit 0
