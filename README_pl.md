@@ -339,7 +339,7 @@ Podczas pierwszego uruchomienia usługi zawartość lokalnej bazy danych jest in
   - `ou=Groups,ou=local,${LDAP_BASED_OLC_SUFFIX}` - dla danych lokalnych grup, przykład: `ou=Groups,ou=local,dc=scisoftware,dc=pl`
   - `ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - dla danych lokalnych użytkowników
   - `ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}`` - dla danych lokalnych użytkowników technicznych; wpisy użytkownika z tej jednostki organizacyjnej mają uprawnienia do odczytu wszystkich wpisów; można ich używać w definicji połączenia dla systemów zewnętrznych.
-  - `ou=Admins,${LDAP_BASED_OLC_SUFFIX}` -dla danych lokalnych użytkowników administracyjnych; wpisy użytkownika z tej jednostki organizacyjnej mają pełne uprawnienia do zarządzania danymi.
+  - `ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` -dla danych lokalnych użytkowników administracyjnych; wpisy użytkownika z tej jednostki organizacyjnej mają pełne uprawnienia do zarządzania danymi.
 
 - Predefiniowane wpisy definiujące grupy użytkowników:
   - `cn=mrc-admin,ou=local,ou=Groups,${LDAP_BASED_OLC_SUFFIX}` - grupa użytkowników z uprawnieniami administratora, która wykorzystywana jest przez system [Mercury 3.0 (HgDB)](https:///hgdb.org).

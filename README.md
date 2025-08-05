@@ -337,7 +337,7 @@ When the service is first started, the local database is initialized using prede
 - The database contains four predefined organizational units (OUs):
   - `ou=Groups,ou=local,${LDAP_BASED_OLC_SUFFIX}` - for local group data, example: `ou=Groups,ou=local,dc=scisoftware,dc=pl`
   - `ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - for local user data
-  - `ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}` - for local technical user data; user entries from this OU have read permissions for all entries; they can be used in connection definitions for external systems. - `ou=Admins,${LDAP_BASED_OLC_SUFFIX}` - for local administrative user data; user entries from this organizational unit have full data management permissions.
+  - `ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}` - for local technical user data; user entries from this OU have read permissions for all entries; they can be used in connection definitions for external systems. - `ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - for local administrative user data; user entries from this organizational unit have full data management permissions.
 
 - Predefined entries defining user groups:
   - `cn=mrc-admin,ou=local,ou=Groups,${LDAP_BASED_OLC_SUFFIX}` - a user group with administrator privileges, used by the [Mercury 3.0 (HgDB)](https:///hgdb.org) system.
