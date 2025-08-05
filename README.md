@@ -77,13 +77,13 @@ docker run --name openldap-proxy -p 389:389 -p 636:636 ^
 
 #### 2.1.1 Prepare the Docker theme configuration file
 
-Create your own Docker theme configuration. Copy the sample `ldap-conf.env` file included in the project to a file with your own name, e.g., `my-ldap-conf.env`. The configuration file contains the following parameters:
+Create your own Docker theme configuration. Copy the sample `ldap-conf.env` file included in the project to a file with your own name, e.g. `my-ldap-conf.env`. The configuration file contains the following parameters:
 
 | Parameter Name | Description |
 | :---- | :---- |
 | LDAP_ORG_DC | Name, acronym of the organization. Example value: `scisoftware`. |
 | LDAP_LOCAL_OLC_SUFFIX | DN (Distinguished Name) of the local MDB domain where local users and groups will be stored; the first value of the `dc` attribute must be named after the previously defined organization name in the `${LDAP_ORG_DC}` parameter. Example: `dc=scisoftware,dc=local`. |
-| LDAP_BASED_OLC_SUFFIX | DN (Distinguished Name) of the OpenLDAP server's base domain. Individual external repositories (proxies) will be attached to this domain. An example value is `dc=scisoftware,dc=pl`. A local MDB will also be attached to this domain automatically (during proxy database initialization) under the tree name `ou=local,${LDAP_BASED_OLC_SUFFIX}`, e.g., `ou=local,dc=scisoftware,dc=pl`. | | LDAP_ROOT_CN | Username of the user with superuser privileges. For example, `manager`. | | LDAP_ROOT_PASSWD_PLAINTEXT | Password of the user with superuser privileges. The password will be decrypted. During initialization, it will be encrypted and placed in the appropriate user entry. For example, `secret`. | | LDAP_OLC_ACCESS | Final configuration of the `olcAccess: to *` access rights role. The default value is `"by * none"`. The predefined database rights will be described later in this document, however, some software requires the `"by * read"` value, e.g., Kerberos configuration, [ldap-ui](https://github.com/dnknth/ldap-ui). |
+| LDAP_BASED_OLC_SUFFIX | DN (Distinguished Name) of the OpenLDAP server's base domain. Individual external repositories (proxies) will be attached to this domain. An example value is `dc=scisoftware,dc=pl`. A local MDB will also be attached to this domain automatically (during proxy database initialization) under the tree name `ou=local,${LDAP_BASED_OLC_SUFFIX}`, e.g. `ou=local,dc=scisoftware,dc=pl`. | | LDAP_ROOT_CN | Username of the user with superuser privileges. For example, `manager`. | | LDAP_ROOT_PASSWD_PLAINTEXT | Password of the user with superuser privileges. The password will be decrypted. During initialization, it will be encrypted and placed in the appropriate user entry. For example, `secret`. | | LDAP_OLC_ACCESS | Final configuration of the `olcAccess: to *` access rights role. The default value is `"by * none"`. The predefined database rights will be described later in this document, however, some software requires the `"by * read"` value, e.g. Kerberos configuration, [ldap-ui](https://github.com/dnknth/ldap-ui). |
 | LDAP_ROOT_CN | The name of a user with superuser privileges. For example, `manager`. |
 | LDAP_ROOT_PASSWD_PLAINTEXT | The password of a user with superuser privileges. The password has been decrypted. During initialization, it will be encrypted and placed in the appropriate user entry. For example, `secret`. |
 | LDAP_OLC_ACCESS | The final configuration of the `olcAccess: access rights role is *`. The default value is `"by * none"`. How database rights are predefined will be described later in the document, however some software requires the `"by * read"` value, e.g. Kerberos configuration, [ldap-ui](https://github.com/dnknth/ldap-ui). |
@@ -138,7 +138,7 @@ export CONTAINER_ID=`docker container ls | grep "<container_name>" | awk '{print
 docker exec -it ${CONTAINER_ID} bash
 ```
 
-* where `<container_name>` is the name of the container under which the OpenLDAP service was launched, e.g., `openldap-proxy`
+* where `<container_name>` is the name of the container under which the OpenLDAP service was launched, e.g. `openldap-proxy`
 
 Example:
 
@@ -151,7 +151,7 @@ After logging in to the container console, run the `add-proxy-to-external-ldap.s
 
 | Parameter Name | Description |
 | :---- | :---- |
-| `BIND_LDAP_URI=<value>` | URL pointing to the external LDAP instance, e.g., `<ldap|ldaps>://example.com`. |
+| `BIND_LDAP_URI=<value>` | URL pointing to the external LDAP instance, e.g. `<ldap|ldaps>://example.com`. |
 | `BIND_DN=<value>` | The distinguished name of the user through which communication will be performed. |
 | `BIND_PASSWD_PLAINTEXT=<value>` | The password of the user through which communication will be performed. |
 | `BIND_BASE_CTX_SEARCH=<value>` | The main search branch of the LDAP instance being connected (base context). |
@@ -206,8 +206,8 @@ Example 2:
 Below is a list of key LDIF files used for proxy server configuration. These files are located in the project's `init` directory and are placed in the `/opt/init` location on the container.
 
 * `01-slapd.conf` - Basic configuration of the OpenLDAP database instance, containing the `(cn=config)` and `(cn=monitor)` definitions. It also contains a list of loaded schemas (attribute and class definitions stored in object databases).
-* `02-mdbdatabase-create.ldif` - Definition of the local `mdb` database for storing local user data. This database has its DN defined in the `${LDAP_LOCAL_OLC_SUFFIX}` variable, e.g., `dc=scisoftware,dc=local`.
-* `03-metadatabase-create.ldif` - Definition of a local `mdb` subordinate database (with the `olcSubordinate: TRUE` field). A database whose DN was defined as `dc=subordinate,${LDAP_BASED_OLC_SUFFIX}`, e.g. `dc=subordinate,dc=scisoftware,dc=pl`. In practice, we do not use this database, but it implicitly allows navigating the main tree of the created `meta` database with the DN defined in the `${LDAP_LOCAL_OLC_SUFFIX}` variable, e.g. `dc=scisoftware,dc=pl`. Thanks to this configuration, databases connected in the future will be visible as its subtrees, their data will be processed with the definition of `baseDN=${LDAP_LOCAL_OLC_SUFFIX}`, e.g. `baseDN=dc=scisoftware,dc=pl` (see the article [Combining OpenLDAP and Active Directory via OpenLDAP meta backend](https://serverfault.com/questions/1152227/combining-openldap-and-active-directory-via-openldap-meta-backend/1190129?noredirect=1#comment1542537_1190129)). The configuration file also contains the configuration of the connection (proxy) to the local `mdb` database defined in the `02-mdbdatabase-create.ldif` file. The connected local database will have the following DN value: `ou=local,${LDAP_BASED_OLC_SUFFIX}`, e.g., `ou=local,dc=scisoftware,dc=pl`.
+* `02-mdbdatabase-create.ldif` - Definition of the local `mdb` database for storing local user data. This database has its DN defined in the `${LDAP_LOCAL_OLC_SUFFIX}` variable, e.g. `dc=scisoftware,dc=local`.
+* `03-metadatabase-create.ldif` - Definition of a local `mdb` subordinate database (with the `olcSubordinate: TRUE` field). A database whose DN was defined as `dc=subordinate,${LDAP_BASED_OLC_SUFFIX}`, e.g. `dc=subordinate,dc=scisoftware,dc=pl`. In practice, we do not use this database, but it implicitly allows navigating the main tree of the created `meta` database with the DN defined in the `${LDAP_LOCAL_OLC_SUFFIX}` variable, e.g. `dc=scisoftware,dc=pl`. Thanks to this configuration, databases connected in the future will be visible as its subtrees, their data will be processed with the definition of `baseDN=${LDAP_LOCAL_OLC_SUFFIX}`, e.g. `baseDN=dc=scisoftware,dc=pl` (see the article [Combining OpenLDAP and Active Directory via OpenLDAP meta backend](https://serverfault.com/questions/1152227/combining-openldap-and-active-directory-via-openldap-meta-backend/1190129?noredirect=1#comment1542537_1190129)). The configuration file also contains the configuration of the connection (proxy) to the local `mdb` database defined in the `02-mdbdatabase-create.ldif` file. The connected local database will have the following DN value: `ou=local,${LDAP_BASED_OLC_SUFFIX}`, e.g. `ou=local,dc=scisoftware,dc=pl`.
 * `04-add-proxy-to-external-ldap.ldif` - Adds a subdatabase (proxy). This file is used by the script for adding/defining communication with an external LDAP database. This file is used by the `add-proxy-to-external-ldap.sh` script and is used as a mechanism for adding another external database.
 * `06-add-all-dbmap-for-ad-proxy.ldif` - Adds a mapping of external AD database attribute names to local OpenLDAP attribute names. This file is used by the `add-proxy-to-external-ldap.sh` script, which is used as a mechanism for adding another external database, and `add-mapping-of-attribute-names-AD-to-OpenLDAP.sh`, which adds attributes to an existing connection to an external LDAP database.
 
@@ -385,8 +385,8 @@ Below is a table of predefined mappings for connections to AD databases. The tab
 | `memberOf` | `memberOf` | The groups to which the object belongs (not transferable, requires synchronization). |
 | `name` | `name` | The object name (identical to the CN for most objects). |
 | `preferredLanguage` | `preferredLanguage` | The user's preferred language. |
-| `generationQualifier` | `generationQualifier` | Generation qualifier (e.g., Jr., Sr., III). |
-| `personalTitle` | `personalTitle` | Personal title/form of address (e.g., Dr., Mr.). |
+| `generationQualifier` | `generationQualifier` | Generation qualifier (e.g. Jr., Sr., III). |
+| `personalTitle` | `personalTitle` | Personal title/form of address (e.g. Dr., Mr.). |
 | `employeeID` | `employeeID` | The employee ID. |
 | `l` | `l` | City (Locality). |
 | `c` | `c` | Country (Country). |
@@ -469,7 +469,7 @@ olcAccess: to dn.subtree="cn=Kerberos,${LDAP_LOCAL_OLC_SUFFIX}" by dn.exact="gid
 ```
 
 * Accessing a local `""` database. The `* read` rule for `dn.base=""` is safe and often standard practice. This information does not reveal any user data or its structure. It is used only to allow client applications to "learn" the server and learn how to communicate with it and where to find data. This allows anonymous reading of LDAP server metadata, such as:
-* `namingContexts`: Provides information about available databases (e.g., `dc=docker,dc=openldap`).
+* `namingContexts`: Provides information about available databases (e.g. `dc=docker,dc=openldap`).
 * `supportedLDAPVersion`: LDAP protocol versions.
 * `supportedSASLMechanisms`: Supported authentication mechanisms.
 * `subschemasubentry`: The distinguished name of the schema subtree, which is crucial for schema management applications.
@@ -582,7 +582,7 @@ ldapsearch -x -D "cn=manager,ou=local,dc=scisoftware,dc=pl" -W \
 
 ### 6.1. OpenLDAP Logs
 
-* **Location:** `slapd` logs are typically available via `journalctl -u slapd -f` (on systems with systemd) or in system files (e.g., `/var/log/syslog`, `/var/log/daemon.log`).
+* **Location:** `slapd` logs are typically available via `journalctl -u slapd -f` (on systems with systemd) or in system files (e.g. `/var/log/syslog`, `/var/log/daemon.log`).
   * **Log Levels (`olcLogLevel`):**
   * `none`: No logs (not recommended).
   * `stats`: Basic statistics (recommended in production).
@@ -614,7 +614,7 @@ If you encounter errors or unexpected behavior, the following tips will help dia
 * **Verify administrator DN**: Verify that the `olcDbBindDN` and `olcDbBindPW` in the `01-setup-meta-backend.ldif` file are correct. Note that the AD administrator account must have read permissions for the entire directory. 
 * **`olcDbMap` Validity**: Ensure that the `uid` <-> `sAMAccountName` mapping in the `06-add-all-dbmap-for-ad-proxy.ldif` file is valid. This mapping is crucial for authentication on most Linux/UNIX systems.
 
-#### 6.4.2. Problems with binary attributes (e.g., `objectGUID`, `objectSid`)
+#### 6.4.2. Problems with binary attributes (e.g. `objectGUID`, `objectSid`)
 
 * **Binary vs. string**: Attribute values such as **`objectGUID`** and **`objectSid`** are binary data in Active Directory. The `slapo-rwm` module in OpenLDAP cannot convert them to readable strings (e.g. UUID or Base64).
 * **Base64 Expectation**: If you use tools like `ldapsearch` without the appropriate flags, binary attributes may be returned as garbled characters or with an error. These tools often expect binary data to be Base64 encoded.
@@ -623,7 +623,7 @@ If you encounter errors or unexpected behavior, the following tips will help dia
 #### 6.4.3. Repository Configuration Issues in IBM WebSphere
 
 * **Federated Repository Configuration**: When adding a federated repository, specifying the root tree DN as the "Unique distinguished name of the base (or parent) entry in federated repositories" e.g. the value `dc=scisoftware,dc=pl` (container parameter `LDAP_BASED_OLC_SUFFIX`) may result in the error message: **Error CWWIM5018E The distinguished name [dc=scisoftware,dc=pl] of the base entry in the repository is invalid. Root cause: [LDAP: error code 32 - Unable to select valid candidates].**
-* **Solution**: We'll solve the problem by first adding a repository pointing to the tree of one of the proxy connections, e.g. `ou=pluton,dc=scisoftware,dc=pl`, and then editing the `wimconfig.xml` configuration file located in the deployment environment's configuration directory (e.g., the `DmgrProfile` profile). Example file path and location: `/opt/IBM/BAW/20.0.0.1/profiles/DmgrProfile/config/cells/PCCell1/wim/config/wimconfig.xml`. When changing this, search for the just-configured value `ou=pluton,dc=scisoftware,dc=pl` and replace it with `dc=scisoftware,dc=pl`. Steps to follow:
+* **Solution**: We'll solve the problem by first adding a repository pointing to the tree of one of the proxy connections, e.g. `ou=pluton,dc=scisoftware,dc=pl`, and then editing the `wimconfig.xml` configuration file located in the deployment environment's configuration directory (e.g. the `DmgrProfile` profile). Example file path and location: `/opt/IBM/BAW/20.0.0.1/profiles/DmgrProfile/config/cells/PCCell1/wim/config/wimconfig.xml`. When changing this, search for the just-configured value `ou=pluton,dc=scisoftware,dc=pl` and replace it with `dc=scisoftware,dc=pl`. Steps to follow:
   * After adding the federated repository via the web console, **stop** the WebSphere servers. 
   * Edit the `wimconfig.xml` file located in the deployment environment's configuration directory, for example, using the `vim` application with the command `vim /opt/IBM/BAW/20.0.0.1/profiles/DmgrProfile/config/cells/PCCell1/wim/config/wimconfig.xml`:
     * Find and **replace** `<config:baseEntries name="ou=pluton,dc=scisoftware,dc=pl" nameInRepository="ou=pluton,dc=scisoftware,dc=pl"/>` with `<config:baseEntries name="dc=scisoftware,dc=pl" nameInRepository="dc=scisoftware,dc=pl"/>`
@@ -644,7 +644,7 @@ After starting, we can verify in the WebSphere console whether users from each c
 #### 6.4.4. Errors while starting the container
 
 * **Checking the logs**: The most important troubleshooting tool is the container logs. Use `docker-compose logs openldap-proxy` (or `docker logs <container_id>`) to see messages from the `slapd` server.
-* **LDIF syntax errors**: Any errors in the LDIF files (e.g., invalid spaces, missing `add:`) will cause the container to fail to start correctly. Check the logs for parsing error messages.
+* **LDIF syntax errors**: Any errors in the LDIF files (e.g. invalid spaces, missing `add:`) will cause the container to fail to start correctly. Check the logs for parsing error messages.
 * **Permission issues**: Ensure that the configuration files are accessible to the user running the Docker container.
 
 ### 6.5. Restart/Reload Procedures
@@ -671,7 +671,7 @@ ldapsearch -x -H ldapi:/// -b "cn=config" -LLL > /var/backups/openldap_config_$(
 
 ### 7.2. Restoration Procedures
 
-*(If necessary, description of the steps for restoring from LDIF files, e.g., `slapadd` for the MDB database, `ldapadd` for `cn=config` after a fresh install.)*
+*(If necessary, description of the steps for restoring from LDIF files, e.g. `slapadd` for the MDB database, `ldapadd` for `cn=config` after a fresh install.)*
 
 ## 8. Sources
 
