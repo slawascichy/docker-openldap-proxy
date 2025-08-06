@@ -1,6 +1,6 @@
 # OpenLDAP Proxy
 
-Niniejszy dokument stanowi kompleksowy przewodnik po konfiguracji i utrzymaniu serwera OpenLDAP działającego w trybie proxy (`back-meta`), integrującego się z usługami katalogowymi Active Directory, lokalną bazą `mdb` oraz innymi źródłami LDAP. Idea nie jest nowa, została opisana między innymi w artykule [Use LDAP Proxy to integrate multiple LDAP servers](https://docs.microfocus.com/doc/425/9.80/configureldapproxy). Na tego artykułu podstawie oraz innych źródeł zrealizowano podstawowy zakres funkcjonalny obrazu. 
+Niniejszy dokument stanowi kompleksowy przewodnik po konfiguracji i utrzymaniu serwera OpenLDAP działającego w trybie proxy (`back-meta`), integrującego się z usługami katalogowymi Active Directory, lokalną bazą `mdb` oraz innymi źródłami LDAP. Idea nie jest nowa, została opisana między innymi w artykule [Use LDAP Proxy to integrate multiple LDAP servers](https://docs.microfocus.com/doc/425/9.80/configureldapproxy). Na tego artykułu podstawie oraz innych źródeł zrealizowano podstawowy zakres funkcjonalny obrazu.
 
 ## O OpenLDAP
 
@@ -123,10 +123,10 @@ Poniżej fragment definicji kompozycji:
 Po uruchomieniu kontenera, skrypt startujący podejmie próbę utworzenia bazy danych i uruchomienia instancji serwera OpenLDAP.
 Próba utworzenia bazy danych jest podejmowana na podstawie warunku istnienia pliku `ldap.init` w katalogu `/var/lib/ldap` na kontenerze. Ten katalog jest mapowany na wolumen o nazwie `openldap`.
 
-> [!TIP] 
+> [!TIP]
 > Jeżeli chcesz by baza danych OpenLDAP została zbudowana od nowa to wystarczy usunąć plik `ldap.init`.
 
-> [!CAUTION] 
+> [!CAUTION]
 > Jeżeli usuniesz plik `ldap.init` utracisz wszystkie dotychczasowe dane.
 
 ### 2.3. Dodawanie proxy do zewnętrznej bazy
@@ -155,8 +155,8 @@ Po zalogowaniu się do konsoli kontenera uruchamiamy skrypt `add-proxy-to-extern
 | `BIND_LDAP_URI=<value>` | Adres URL wskazujący na zewnętrzną instancję LDAP, np. `<ldap|ldaps>://example.com`. |
 | `BIND_DN=<value>` | Nazwa wyróżniająca użytkownika, przez którą będzie realizowana komunikacja. |
 | `BIND_PASSWD_PLAINTEXT=<value>` | Hasło użytkownika, przez które będzie realizowana komunikacja. |
-| `BIND_BASE_CTX_SEARCH=<value>` | Główna gałąź wyszukiwania podłączanej instancji LDAP (base context, kontekst bazowy). | 
-| `LDAP_PROXY_OU_NAME=<value>` | Nazwa jednostki organizacyjnej, w której powinno pojawić się połączone drzewo LDAP. | 
+| `BIND_BASE_CTX_SEARCH=<value>` | Główna gałąź wyszukiwania podłączanej instancji LDAP (base context, kontekst bazowy). |
+| `LDAP_PROXY_OU_NAME=<value>` | Nazwa jednostki organizacyjnej, w której powinno pojawić się połączone drzewo LDAP. |
 
 Opcjonalnie można użyć parametrów jednej z opcji:
 
@@ -175,7 +175,7 @@ Wszystkie powyższe informacje można uzyskać wydając polecenie:
 > [!IMPORTANT]
 > Zanim wydasz komendę dodania bazy wpierw przetestuj czy definicja połączenia do niej jest poprawna. Użyj opcji `--test` podczas pierwszego uruchomienia skryptu.
 
-> [!IMPORTANT]
+> [!TIP]
 > Definiując połączenia do AD używaj opcji `--addADAttributesMapping`. Jeżeli zapomnisz, to się nie martw. Zawsze możesz później uruchomić skrypt `./add-mapping-of-attribute-names-AD-to-OpenLDAP.sh <nazwa_jednostki_organizacyjnej>`.
 
 Przykład 1:
@@ -188,6 +188,7 @@ Przykład 1:
   BIND_BASE_CTX_SEARCH=CN=Users,DC=example,DC=local \
   LDAP_PROXY_OU_NAME=pluton --addADAttributesMapping --test 
 ```
+
 * dodanie połączenia nastąpi po uruchomieniu powyższego polecenia bez opcji `--test`.
 
 Przykład 2:
@@ -200,6 +201,7 @@ Przykład 2:
   BIND_BASE_CTX_SEARCH=ou=ibpm.pro,dc=ibpm,dc=example \
   LDAP_PROXY_OU_NAME=ibpm --test
 ```
+
 * dodanie połączenia nastąpi po uruchomieniu powyższego polecenia bez opcji `--test`.
 
 ### 2.4. Pliki LDIF użyte do konfiguracji
@@ -273,6 +275,7 @@ olcObjectClasses: ( 1.2.840.113556.1.3.23 NAME 'container' SUP top STRUCTURAL MU
 olcObjectClasses: ( 1.2.840.113556.1.5.8 NAME 'group' SUP top STRUCTURAL MUST (cn $ sAMAccountName ) )
 olcObjectClasses: ( 1.2.840.113556.1.5.9 NAME 'user' SUP inetOrgPerson STRUCTURAL MUST ( uid $ sAMAccountName ) )
 ```
+
 </details>
 
 #### 2.6.2. Schemat atrybutów CSZU
@@ -305,7 +308,7 @@ olcObjectClasses: ( 1.2.840.113556.1.5.9 NAME 'user' SUP inetOrgPerson STRUCTURA
 # LDAP_ACCESS_FILTER=(&(objectclass=shadowaccount)(objectclass=posixaccount)(allowSystem=admin.scisoftware.pl;shell;*))
 #
 #
-#	Created by: Sławomir Cichy (slawas@slawas.pl)
+# Created by: Sławomir Cichy (slawas@slawas.pl)
 #   Copyright 2014-2024 SciSoftwere Sławomir Cichy Inc.
 #
 dn: cn=cszu,cn=schema,cn=config
@@ -335,23 +338,23 @@ olcObjectClasses: ( 1.3.6.1.4.1.2021.3.2.1 NAME 'cszuGroup' DESC 'Attributes use
 
 Podczas pierwszego uruchomienia usługi zawartość lokalnej bazy danych jest inicjowana przy użyciu predefiniowanych wpisów.
 
-- Baza danych zawiera predefiniowane 4 jednostki organizacyjne (OU):
-  - `ou=Groups,ou=local,${LDAP_BASED_OLC_SUFFIX}` - dla danych lokalnych grup, przykład: `ou=Groups,ou=local,dc=scisoftware,dc=pl`
-  - `ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - dla danych lokalnych użytkowników
-  - `ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}`` - dla danych lokalnych użytkowników technicznych; wpisy użytkownika z tej jednostki organizacyjnej mają uprawnienia do odczytu wszystkich wpisów; można ich używać w definicji połączenia dla systemów zewnętrznych.
-  - `ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` -dla danych lokalnych użytkowników administracyjnych; wpisy użytkownika z tej jednostki organizacyjnej mają pełne uprawnienia do zarządzania danymi.
+* Baza danych zawiera predefiniowane 4 jednostki organizacyjne (OU):
+  * `ou=Groups,ou=local,${LDAP_BASED_OLC_SUFFIX}` - dla danych lokalnych grup, przykład: `ou=Groups,ou=local,dc=scisoftware,dc=pl`
+  * `ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - dla danych lokalnych użytkowników
+  * `ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}`` - dla danych lokalnych użytkowników technicznych; wpisy użytkownika z tej jednostki organizacyjnej mają uprawnienia do odczytu wszystkich wpisów; można ich używać w definicji połączenia dla systemów zewnętrznych.
+  * `ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` -dla danych lokalnych użytkowników administracyjnych; wpisy użytkownika z tej jednostki organizacyjnej mają pełne uprawnienia do zarządzania danymi.
 
-- Predefiniowane wpisy definiujące grupy użytkowników:
-  - `cn=mrc-admin,ou=local,ou=Groups,${LDAP_BASED_OLC_SUFFIX}` - grupa użytkowników z uprawnieniami administratora, która wykorzystywana jest przez system [Mercury 3.0 (HgDB)](https:///hgdb.org).
-  - `cn=mrc-user,ou=local,ou=Groups,${LDAP_BASED_OLC_SUFFIX}` - grupa użytkowników z uprawnieniami dostępu do danych , która wykorzystywana jest przez system [Mercury 3.0 (HgDB)](https:///hgdb.org).
+* Predefiniowane wpisy definiujące grupy użytkowników:
+  * `cn=mrc-admin,ou=local,ou=Groups,${LDAP_BASED_OLC_SUFFIX}` - grupa użytkowników z uprawnieniami administratora, która wykorzystywana jest przez system [Mercury 3.0 (HgDB)](https:///hgdb.org).
+  * `cn=mrc-user,ou=local,ou=Groups,${LDAP_BASED_OLC_SUFFIX}` - grupa użytkowników z uprawnieniami dostępu do danych , która wykorzystywana jest przez system [Mercury 3.0 (HgDB)](https:///hgdb.org).
 
-- Predefiniowane wpisy definiujące użytkowników:
-  - `${LDAP_ROOT_CN}`,ou=local,${LDAP_BASED_OLC_SUFFIX} - menedżer LDAP, użytkownik ma wszystkie uprawnienia do wszystkich wpisów; hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_ROOT_PASSWD_PLAINTEXT` (wartość domyślna: „secret”) i powinno być zmienione w środowiskach produkcyjnych. Przykład nazwy: `cn=manager,ou=local,dc=scisoftware,dc=pl`
-  - `cn=ldapadmin,ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - administrator, użytkownik ma uprawnienia do zapisu do wszystkich wpisów; hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno być zmienione w środowiskach produkcyjnych.
-  - `uid=ldapui,ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - administrator, użytkownik ma uprawnienia do zapisu do wszystkich wpisów; hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno zostać zmienione w środowiskach produkcyjnych. Wpis można wykorzystać do integracji z interfejsem użytkownika LDAP.
-  - `cn=${LDAP_TECHNICAL_USER_CN},ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}` - użytkownik techniczny do definiiowania komunikacji z serwerem OpenLDAP, domyślna wartość `LDAP_TECHNICAL_USER_CN` to „frontendadmin”, wpis użytkownika ma uprawnienia do odczytu wszystkich wpisów; hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno zostać zmienione w środowiskach produkcyjnych.
-  - `uid=mrcmanager,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - przykładowy użytkownik z uprawnieniami administratora systemu [Mercury 3.0 (HgDB)](https:///hgdb.org); hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno zostać zmienione w środowiskach produkcyjnych.
-  - `uid=mrcuser,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - przykładowy użytkownik z uprawnieniami użytkownika systemu [Mercury 3.0 (HgDB)](https:///hgdb.org); hasło użytkownika należy zdefiniować w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i zmienić w środowiskach produkcyjnych.
+* Predefiniowane wpisy definiujące użytkowników:
+  * `${LDAP_ROOT_CN}`,ou=local,${LDAP_BASED_OLC_SUFFIX} - menedżer LDAP, użytkownik ma wszystkie uprawnienia do wszystkich wpisów; hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_ROOT_PASSWD_PLAINTEXT` (wartość domyślna: „secret”) i powinno być zmienione w środowiskach produkcyjnych. Przykład nazwy: `cn=manager,ou=local,dc=scisoftware,dc=pl`
+  * `cn=ldapadmin,ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - administrator, użytkownik ma uprawnienia do zapisu do wszystkich wpisów; hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno być zmienione w środowiskach produkcyjnych.
+  * `uid=ldapui,ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - administrator, użytkownik ma uprawnienia do zapisu do wszystkich wpisów; hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno zostać zmienione w środowiskach produkcyjnych. Wpis można wykorzystać do integracji z interfejsem użytkownika LDAP.
+  * `cn=${LDAP_TECHNICAL_USER_CN},ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}` - użytkownik techniczny do definiiowania komunikacji z serwerem OpenLDAP, domyślna wartość `LDAP_TECHNICAL_USER_CN` to „frontendadmin”, wpis użytkownika ma uprawnienia do odczytu wszystkich wpisów; hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno zostać zmienione w środowiskach produkcyjnych.
+  * `uid=mrcmanager,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - przykładowy użytkownik z uprawnieniami administratora systemu [Mercury 3.0 (HgDB)](https:///hgdb.org); hasło użytkownika powinno być zdefiniowane w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i powinno zostać zmienione w środowiskach produkcyjnych.
+  * `uid=mrcuser,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - przykładowy użytkownik z uprawnieniami użytkownika systemu [Mercury 3.0 (HgDB)](https:///hgdb.org); hasło użytkownika należy zdefiniować w zmiennej środowiskowej `LDAP_TECHNICAL_USER_PASSWD` (wartość domyślna: „secret”) i zmienić w środowiskach produkcyjnych.
 
 ![Przykład predefiniowanego drzewa lokalnej bazy danych](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/sample-predefined-tree-by-apache-dir-studio.png)
 
@@ -437,10 +440,9 @@ Mapowanie atrybutów między OpenLDAP a Active Directory ma na celu normalizacj�
 * **`objectSid` <-> `objectSid`**: Mapowanie to zapewnia, że atrybut **`objectSid`**, czyli unikalny identyfikator bezpieczeństwa w AD, jest widoczny i dostępny dla klientów OpenLDAP pod swoją oryginalną nazwą.
 * **`uniqueMember` <-> `member`**: Umożliwia poprawne mapowanie członków grupy. Atrybut **`member`** w AD jest mapowany na **`uniqueMember`**, co jest zgodne ze schematem `groupOfUniqueNames` w OpenLDAP.
 
-
 ### 3.3. Obsługa GUID/SID
 
-Atrybuty `objectGUID` i `objectSid` są atrybutami binarnymi specyficznymi dla Active Directory. Na razie nie udało się rozwiązać problemu prawidłowego mapowania pola `objectGUID` (AD) do `entryUIID` (OpenLDAP). Otworzyłem wątek [objectGUID to entryUUID mapping in Openldap proxy with AD](https://serverfault.com/questions/1190133/objectguid-to-entryuuid-mapping-in-openldap-proxy-with-ad) - zobaczymy może komuś uda się rozwiązać problem. 
+Atrybuty `objectGUID` i `objectSid` są atrybutami binarnymi specyficznymi dla Active Directory. Na razie nie udało się rozwiązać problemu prawidłowego mapowania pola `objectGUID` (AD) do `entryUIID` (OpenLDAP). Otworzyłem wątek [objectGUID to entryUUID mapping in Openldap proxy with AD](https://serverfault.com/questions/1190133/objectguid-to-entryuuid-mapping-in-openldap-proxy-with-ad) - zobaczymy może komuś uda się rozwiązać problem.
 
 ## 4. Uwierzytelnianie i autoryzacja
 
@@ -468,7 +470,7 @@ olcAccess: to attrs=sambaPasswordHistory,sambaPwdLastSet,shadowLastChange by dn.
 olcAccess: to attrs=krbPrincipalKey by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn.exact="uid=kdc-service,${LDAP_LOCAL_OLC_SUFFIX}" read by dn.exact="uid=kadmin-service,${LDAP_LOCAL_OLC_SUFFIX}" write by dn.exact="uid=kdc-service,ou=local,${LDAP_BASED_OLC_SUFFIX}" read by dn.exact="uid=kadmin-service,ou=local,${LDAP_BASED_OLC_SUFFIX}" write by self auth by self write by * none
 ```
 
-* Dostęp do lokalnej gałęzi Kerberos 
+* Dostęp do lokalnej gałęzi Kerberos
 
 ```ldif
 olcAccess: to dn.subtree="cn=Kerberos,${LDAP_LOCAL_OLC_SUFFIX}" by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn.exact="uid=kdc-service,${LDAP_LOCAL_OLC_SUFFIX}" read by dn.exact="uid=kadmin-service,${LDAP_LOCAL_OLC_SUFFIX}" write by * none
@@ -484,17 +486,17 @@ olcAccess: to dn.subtree="cn=Kerberos,${LDAP_LOCAL_OLC_SUFFIX}" by dn.exact="gid
 olcAccess: to dn.base="" by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by * read
 ```
 
-* Dostęp do gałęzi głównej bazy danych 
+* Dostęp do gałęzi głównej bazy danych
 
 ```ldif
 olcAccess: to dn.subtree="${LDAP_LOCAL_OLC_SUFFIX}" by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" manage by * read
 ```
 
-* Dostęp do pozostałych elementów `to *`   
+* Dostęp do pozostałych elementów `to *`
 
 ```ldif
 olcAccess: to * by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" manage by self read by self write by self auth ${LDAP_OLC_ACCESS}
-``` 
+```
 
 Oczywiście dostępy te można zmodyfikować używając narzędzia `ldapmodify` oraz odpowiedniego skryptu LDIF:
 
@@ -523,8 +525,8 @@ ldapmodify -Y EXTERNAL -H ldapi:/// -f /opt/workspace/modify_meta_acl_6.ldif
 
 OpenLDAP proxy obsługuje różne metody uwierzytelniania:
 
-- **Simple Bind**: Uwierzytelnianie za pomocą nazwy użytkownika (DN) i hasła. Używane w testach i wielu aplikacjach.
-- *(Opcjonalnie: GSSAPI/Kerberos, DIGEST-MD5, jeśli skonfigurowane.)*
+* **Simple Bind**: Uwierzytelnianie za pomocą nazwy użytkownika (DN) i hasła. Używane w testach i wielu aplikacjach.
+* *(Opcjonalnie: GSSAPI/Kerberos, DIGEST-MD5, jeśli skonfigurowane.)*
 
 ## 5. Przykłady wyszukiwań i testowania
 
@@ -542,7 +544,7 @@ ldapsearch -x -D "cn=Administrator,ou=pluton,dc=scisoftware,dc=pl" -W \
 
 **Oczekiwany wynik:** Serwer powinien zwrócić dane konta Administratora.
 
------
+---
 
 #### Test 2: Wyszukiwanie po `uid` i pobieranie atrybutów binarnych
 
@@ -556,7 +558,7 @@ ldapsearch -x -D "uid=ldapui,ou=Admins,ou=local,dc=scisoftware,dc=pl" -W \
 
 **Oczekiwany wynik:** Zwrócone atrybuty `cn` i `objectGUID` dla użytkownika `slawas`. Wartość `objectGUID` będzie nieczytelna dla narzędzi klienckich.
 
------
+---
 
 #### Test 3: Wyszukiwanie z konta lokalnego i pobieranie `entryuuid`
 
@@ -570,7 +572,7 @@ ldapsearch -x -D "cn=manager,ou=local,dc=scisoftware,dc=pl" -W \
 
 **Oczekiwany wynik:** Zwrócone atrybuty `cn`, `uid` i `entryuuid` dla użytkownika `slawas`. Wartość `entryuuid` będzie identyczna z nieczytelną wartością `objectGUID` z poprzedniego testu.
 
------
+---
 
 #### Test 4: Wyszukiwanie poddrzewa i sprawdzanie `objectClass`
 
@@ -626,13 +628,13 @@ Jeśli napotkasz błędy lub nieoczekiwane zachowanie, poniższe wskazówki pomo
 
 #### 6.4.3. Problemy konfiguracji repozytorium w IBM WebSphere
 
-* **Konfiguracja sfederowanego repozytorium**: Podczas dodawania sfederowanego repozytorium, podając `DN` głównego drzewa jako "Unikalna, wyróżniająca nazwa wpisu bazowego (lub nadrzędnego) w repozytoriach federacyjnych" np. wartość `dc=scisoftware,dc=pl` (parametr kontenera `LDAP_BASED_OLC_SUFFIX`) to możemy otrzymać komunikat błędu: **Error CWWIM5018E Nazwa wyróżniająca [dc=scisoftware,dc=pl] pozycji podstawowej w repozytorium jest niepoprawna. Podstawowa przyczyna: [LDAP: error code 32 - Unable to select valid candidates].**
+* **Konfiguracja sfederowanego repozytorium**: Podczas dodawania sfederowanego repozytorium, podając `DN` głównego drzewa jako "Unikalna, wyróżniająca nazwa wpisu bazowego (lub nadrzędnego) w repozytoriach federacyjnych" np. wartość `dc=scisoftware,dc=pl` (parametr kontenera `LDAP_BASED_OLC_SUFFIX`) to możemy otrzymać komunikat błędu: **`Error CWWIM5018E Nazwa wyróżniająca [dc=scisoftware,dc=pl] pozycji podstawowej w repozytorium jest niepoprawna. Podstawowa przyczyna: [LDAP: error code 32 - Unable to select valid candidates]`**.
 * **Rozwiązanie**: Problem rozwiążemy poprzez dodanie, w pierwszej kolejności, repozytorium wskazujące na drzewo jednego z połączeń proxy np. `ou=pluton,dc=scisoftware,dc=pl`, a następnie edycję pliku konfiguracyjnego `wimconfig.xml` znajdującego się w katalogu konfiguracyjnym środowiska wdrażania (np. profil `DmgrProfile`). Przykładowa ścieżka, lokalizacja, pliku: `/opt/IBM/BAW/20.0.0.1/profiles/DmgrProfile/config/cells/PCCell1/wim/config/wimconfig.xml`. Podczas zmiany wyszukujemy właśnie skonfigurowaną wartość `ou=pluton,dc=scisoftware,dc=pl` i zamieniamy ją na `dc=scisoftware,dc=pl`. Kroki jakie należy wykonać:  
   * Po dodaniu za pomocą konsoli Web sfederowanego repozytorium **zatrzymaj** serwery WebSphere.
   * Edytuj plik `wimconfig.xml` znajdujący się w katalogu konfiguracyjnym środowiska wdrażania przykładowo używając do tego aplikacji `vim` poleceniem  `vim /opt/IBM/BAW/20.0.0.1/profiles/DmgrProfile/config/cells/PCCell1/wim/config/wimconfig.xml`:
     * Znajdź i **zamień** `<config:baseEntries name="ou=pluton,dc=scisoftware,dc=pl" nameInRepository="ou=pluton,dc=scisoftware,dc=pl"/>` na `<config:baseEntries name="dc=scisoftware,dc=pl" nameInRepository="dc=scisoftware,dc=pl"/>`
     * Znajdź i **zamień** `<config:participatingBaseEntries name="ou=pluton,dc=scisoftware,dc=pl"/>` na `<config:participatingBaseEntries name="ou=pluton,dc=scisoftware,dc=pl"/>`
-  * **Wystartuj** środowisko serwerów WebSphere. 
+  * **Wystartuj** środowisko serwerów WebSphere.
   
 Po wystartowaniu w konsoli WebSphere możemy zweryfikować, czy widoczni są użytkownicy z poszczególnych podłączonych repozytoriów. Przechodzimy do **Users and Groups > Manage Users** i za pomocą formularza wyszukiwania testujemy wyszukiwanie danych użytkowników:
 
@@ -648,7 +650,7 @@ Po wystartowaniu w konsoli WebSphere możemy zweryfikować, czy widoczni są uż
 #### 6.4.4. Błędy podczas uruchamiania kontenera
 
 * **Sprawdzanie logów**: Najważniejszym narzędziem do rozwiązywania problemów są logi kontenera. Użyj `docker-compose logs openldap-proxy` (lub `docker logs <container_id>`), aby zobaczyć komunikaty z serwera `slapd`.
-* **Błędy składni LDIF**: Wszelkie błędy w plikach LDIF (np. niepoprawne spacje, brak `add: `) spowodują, że kontener nie uruchomi się poprawnie. Sprawdź logi pod kątem komunikatów o błędach parsowania.
+* **Błędy składni LDIF**: Wszelkie błędy w plikach LDIF (np. niepoprawne spacje, brak `add:`) spowodują, że kontener nie uruchomi się poprawnie. Sprawdź logi pod kątem komunikatów o błędach parsowania.
 * **Problemy z uprawnieniami**: Upewnij się, że pliki konfiguracyjne są dostępne dla użytkownika, pod którym działa kontener Docker.
 
 ### 6.5. Procedury restartu/przeładowania
@@ -675,6 +677,7 @@ ldapsearch -x -H ldapi:/// -b "cn=config" -LLL > /var/backups/openldap_config_$(
 ```bash
 /usr/sbin/slapcat -l /var/backups/openldap_mdb_$(date +%Y%m%d%H%M%S)/mdb_backup.ldif -b "dc=scisoftware,dc=pl"
 ```
+
 *(Dostosuj bazę DN do swojej konfiguracji `mdb`.)*
 
 ### 7.2. Procedury odtwarzania

@@ -83,7 +83,7 @@ Create your own Docker theme configuration. Copy the sample `ldap-conf.env` file
 | :---- | :---- |
 | LDAP_ORG_DC | Name, acronym of the organization. Example value: `scisoftware`. |
 | LDAP_LOCAL_OLC_SUFFIX | DN (Distinguished Name) of the local MDB domain where local users and groups will be stored; the first value of the `dc` attribute must be named after the previously defined organization name in the `${LDAP_ORG_DC}` parameter. Example: `dc=scisoftware,dc=local`. |
-| LDAP_BASED_OLC_SUFFIX | DN (Distinguished Name) of the OpenLDAP server's base domain. Individual external repositories (proxies) will be attached to this domain. An example value is `dc=scisoftware,dc=pl`. A local MDB will also be attached to this domain automatically (during proxy database initialization) under the tree name `ou=local,${LDAP_BASED_OLC_SUFFIX}`, e.g. `ou=local,dc=scisoftware,dc=pl`. | | LDAP_ROOT_CN | Username of the user with superuser privileges. For example, `manager`. | | LDAP_ROOT_PASSWD_PLAINTEXT | Password of the user with superuser privileges. The password will be decrypted. During initialization, it will be encrypted and placed in the appropriate user entry. For example, `secret`. | | LDAP_OLC_ACCESS | Final configuration of the `olcAccess: to *` access rights role. The default value is `"by * none"`. The predefined database rights will be described later in this document, however, some software requires the `"by * read"` value, e.g. Kerberos configuration, [ldap-ui](https://github.com/dnknth/ldap-ui). |
+| LDAP_BASED_OLC_SUFFIX | DN (Distinguished Name) of the OpenLDAP server's base domain. Individual external repositories (proxies) will be attached to this domain. An example value is `dc=scisoftware,dc=pl`. A local MDB will also be attached to this domain automatically (during proxy database initialization) under the tree name `ou=local,${LDAP_BASED_OLC_SUFFIX}`, e.g. `ou=local,dc=scisoftware,dc=pl`. |
 | LDAP_ROOT_CN | The name of a user with superuser privileges. For example, `manager`. |
 | LDAP_ROOT_PASSWD_PLAINTEXT | The password of a user with superuser privileges. The password has been decrypted. During initialization, it will be encrypted and placed in the appropriate user entry. For example, `secret`. |
 | LDAP_OLC_ACCESS | The final configuration of the `olcAccess: access rights role is *`. The default value is `"by * none"`. How database rights are predefined will be described later in the document, however some software requires the `"by * read"` value, e.g. Kerberos configuration, [ldap-ui](https://github.com/dnknth/ldap-ui). |
@@ -174,7 +174,7 @@ All of the above information can be obtained by issuing the command:
 > [!IMPORTANT]
 > Before issuing the command to add a database, first test whether the connection definition is correct. Use the `--test` option when running the script for the first time.
 
-> [!IMPORTANT]
+> [!TIP]
 > When defining connections to AD, use the `--addADAttributesMapping` option. If you forget, don't worry. You can always run the `./add-mapping-of-attribute-names-AD-to-OpenLDAP.sh <organizational_unit_name>` script later.
 
 Example 1:
@@ -187,6 +187,7 @@ Example 1:
   BIND_BASE_CTX_SEARCH=CN=Users,DC=example,DC=local \
   LDAP_PROXY_OU_NAME=pluton --addADAttributesMapping --test 
 ```
+
 * The connection will be added after running the above command without the `--test` option.
 
 Example 2:
@@ -199,6 +200,7 @@ Example 2:
   BIND_BASE_CTX_SEARCH=ou=ibpm.pro,dc=ibpm,dc=example \
   LDAP_PROXY_OU_NAME=ibpm --test
 ```
+
 * the connection will be added after running the above command without the `--test` option.
 
 ### 2.4. LDIF Files Used for Configuration
@@ -272,6 +274,7 @@ olcObjectClasses: ( 1.2.840.113556.1.3.23 NAME 'container' SUP top STRUCTURAL MU
 olcObjectClasses: ( 1.2.840.113556.1.5.8 NAME 'group' SUP top STRUCTURAL MUST (cn $ sAMAccountName ) )
 olcObjectClasses: ( 1.2.840.113556.1.5.9 NAME 'user' SUP inetOrgPerson STRUCTURAL MUST ( uid $ sAMAccountName ) )
 ```
+
 </details>
 
 #### 2.6.2. CSZU Attribute Schema
@@ -291,7 +294,7 @@ olcObjectClasses: ( 1.2.840.113556.1.5.9 NAME 'user' SUP inetOrgPerson STRUCTURA
 # as an additional filter in integration with sssd (Unix)
 #
 # Value's format in 'allowSystem' attribute is:
-# 	<host_name>;<service_name>;<expiration_date_in_format_YYYYMMDDHH24mm>;<task_ID>
+#  <host_name>;<service_name>;<expiration_date_in_format_YYYYMMDDHH24mm>;<task_ID>
 # Where:
 #  - host_name: name of host
 #  - service_name - name of service
@@ -304,7 +307,7 @@ olcObjectClasses: ( 1.2.840.113556.1.5.9 NAME 'user' SUP inetOrgPerson STRUCTURA
 # LDAP_ACCESS_FILTER=(&(objectclass=shadowaccount)(objectclass=posixaccount)(allowSystem=admin.scisoftware.pl;shell;*))
 #
 #
-#	Created by: Sławomir Cichy (slawas@slawas.pl)
+# Created by: Sławomir Cichy (slawas@slawas.pl)
 #   Copyright 2014-2024 SciSoftwere Sławomir Cichy Inc.
 #
 dn: cn=cszu,cn=schema,cn=config
@@ -334,21 +337,21 @@ olcObjectClasses: ( 1.3.6.1.4.1.2021.3.2.1 NAME 'cszuGroup' DESC 'Attributes use
 
 When the service is first started, the local database is initialized using predefined entries.
 
-- The database contains four predefined organizational units (OUs):
-  - `ou=Groups,ou=local,${LDAP_BASED_OLC_SUFFIX}` - for local group data, example: `ou=Groups,ou=local,dc=scisoftware,dc=pl`
-  - `ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - for local user data
-  - `ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}` - for local technical user data; user entries from this OU have read permissions for all entries; they can be used in connection definitions for external systems. - `ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - for local administrative user data; user entries from this organizational unit have full data management permissions.
+* The database contains four predefined organizational units (OUs):
+  * `ou=Groups,ou=local,${LDAP_BASED_OLC_SUFFIX}` - for local group data, example: `ou=Groups,ou=local,dc=scisoftware,dc=pl`
+  * `ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - for local user data
+  * `ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}` - for local technical user data; user entries from this OU have read permissions for all entries; they can be used in connection definitions for external systems. - `ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - for local administrative user data; user entries from this organizational unit have full data management permissions.
 
-- Predefined entries defining user groups:
-  - `cn=mrc-admin,ou=local,ou=Groups,${LDAP_BASED_OLC_SUFFIX}` - a user group with administrator privileges, used by the [Mercury 3.0 (HgDB)](https:///hgdb.org) system.
-  - `cn=mrc-user,ou=local,ou=Groups,${LDAP_BASED_OLC_SUFFIX}` - a user group with data access permissions, used by the [Mercury 3.0 (HgDB)](https:///hgdb.org) system.
+* Predefined entries defining user groups:
+  * `cn=mrc-admin,ou=local,ou=Groups,${LDAP_BASED_OLC_SUFFIX}` - a user group with administrator privileges, used by the [Mercury 3.0 (HgDB)](https:///hgdb.org) system.
+  * `cn=mrc-user,ou=local,ou=Groups,${LDAP_BASED_OLC_SUFFIX}` - a user group with data access permissions, used by the [Mercury 3.0 (HgDB)](https:///hgdb.org) system.
 
-- Predefined user definition entries:
-  - `${LDAP_ROOT_CN}`,ou=local,${LDAP_BASED_OLC_SUFFIX} - LDAP manager, the user has all permissions for all entries; the user's password should be defined in the `LDAP_ROOT_PASSWD_PLAINTEXT` environment variable (default value: "secret") and should be changed in production environments. Example name: `cn=manager,ou=local,dc=scisoftware,dc=pl`
-  - `cn=ldapadmin,ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - administrator, the user has write permissions for all entries; the user's password should be defined in the `LDAP_TECHNICAL_USER_PASSWD` environment variable (default value: "secret") and should be changed in production environments. - `uid=ldapui,ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - administrator, this user has write permissions to all entries; the user's password should be defined in the `LDAP_TECHNICAL_USER_PASSWD` environment variable (default value: "secret") and should be changed in production environments. This entry can be used for integration with the LDAP user interface.
-  - `cn=${LDAP_TECHNICAL_USER_CN},ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}` - technical user for defining communication with the OpenLDAP server; the default value of `LDAP_TECHNICAL_USER_CN` is "frontendadmin", this user entry has read permissions to all entries; The user's password should be defined in the `LDAP_TECHNICAL_USER_PASSWD` environment variable (default value: "secret") and should be changed in production environments.
-  - `uid=mrcmanager,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - an example user with system administrator privileges for [Mercury 3.0 (HgDB)](https:///hgdb.org); the user's password should be defined in the `LDAP_TECHNICAL_USER_PASSWD` environment variable (default value: "secret") and should be changed in production environments.
-  - `uid=mrcuser,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - an example user with system user privileges for [Mercury 3.0 (HgDB)](https:///hgdb.org); the user password should be defined in the `LDAP_TECHNICAL_USER_PASSWD` environment variable (default value: "secret") and changed in production environments.
+* Predefined user definition entries:
+  * `${LDAP_ROOT_CN}`,ou=local,${LDAP_BASED_OLC_SUFFIX} - LDAP manager, the user has all permissions for all entries; the user's password should be defined in the `LDAP_ROOT_PASSWD_PLAINTEXT` environment variable (default value: "secret") and should be changed in production environments. Example name: `cn=manager,ou=local,dc=scisoftware,dc=pl`
+  * `cn=ldapadmin,ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - administrator, the user has write permissions for all entries; the user's password should be defined in the `LDAP_TECHNICAL_USER_PASSWD` environment variable (default value: "secret") and should be changed in production environments. - `uid=ldapui,ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}` - administrator, this user has write permissions to all entries; the user's password should be defined in the `LDAP_TECHNICAL_USER_PASSWD` environment variable (default value: "secret") and should be changed in production environments. This entry can be used for integration with the LDAP user interface.
+  * `cn=${LDAP_TECHNICAL_USER_CN},ou=Technical,ou=local,${LDAP_BASED_OLC_SUFFIX}` - technical user for defining communication with the OpenLDAP server; the default value of `LDAP_TECHNICAL_USER_CN` is "frontendadmin", this user entry has read permissions to all entries; The user's password should be defined in the `LDAP_TECHNICAL_USER_PASSWD` environment variable (default value: "secret") and should be changed in production environments.
+  * `uid=mrcmanager,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - an example user with system administrator privileges for [Mercury 3.0 (HgDB)](https:///hgdb.org); the user's password should be defined in the `LDAP_TECHNICAL_USER_PASSWD` environment variable (default value: "secret") and should be changed in production environments.
+  * `uid=mrcuser,ou=People,ou=local,${LDAP_BASED_OLC_SUFFIX}` - an example user with system user privileges for [Mercury 3.0 (HgDB)](https:///hgdb.org); the user password should be defined in the `LDAP_TECHNICAL_USER_PASSWD` environment variable (default value: "secret") and changed in production environments.
   
 ![Przykład predefiniowanego drzewa lokalnej bazy danych](https://raw.githubusercontent.com/slawascichy/docker-openldap-proxy/refs/heads/main/doc/sample-predefined-tree-by-apache-dir-studio.png)
 
@@ -484,11 +487,11 @@ olcAccess: to dn.base="" by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=ext
 olcAccess: to dn.subtree="${LDAP_LOCAL_OLC_SUFFIX}" by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" manage by * read
 ```
 
-* Access to the remaining elements `to *``   
+* Access to the remaining elements `to *``
 
 ```ldif
 olcAccess: to * by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage by dn="${LDAP_LOCAL_ROOT_DN}" manage by dn.children="ou=Admins,${LDAP_LOCAL_OLC_SUFFIX}" manage by dn="${LDAP_BASED_ROOT_DN}" manage by dn.children="ou=Admins,ou=local,${LDAP_BASED_OLC_SUFFIX}" manage by self read by self write by self auth ${LDAP_OLC_ACCESS}
-``` 
+```
 
 Of course, these accesses can be modified using the `ldapmodify` tool and the appropriate LDIF script:
 
@@ -517,8 +520,8 @@ ldapmodify -Y EXTERNAL -H ldapi:/// -f /opt/workspace/modify_meta_acl_6.ldif
 
 The OpenLDAP proxy supports various authentication methods:
 
-- **Simple Bind**: Authentication via username (DN) and password. Used for testing and many applications.
-- *(Optional: GSSAPI/Kerberos, DIGEST-MD5, if configured.)*
+* **Simple Bind**: Authentication via username (DN) and password. Used for testing and many applications.
+* *(Optional: GSSAPI/Kerberos, DIGEST-MD5, if configured.)*
 
 ## 5. Search and Test Examples
 
@@ -536,7 +539,7 @@ ldapsearch -x -D "cn=Administrator,ou=pluton,dc=scisoftware,dc=pl" -W \
 
 **Expected result:** The server should return the Administrator account details.
 
------
+---
 
 #### Test 2: Searching by `uid` and Retrieving Binary Attributes
 
@@ -550,7 +553,7 @@ ldapsearch -x -D "uid=ldapui,ou=Admins,ou=local,dc=scisoftware,dc=pl" -W \
 
 **Expected result:** Returned `cn` and `objectGUID` attributes for user `slawas`. The `objectGUID` value will be unreadable by client tools.
 
------
+---
 
 #### Test 3: Searching from a local account and retrieving the `entryuuid`
 
@@ -564,7 +567,7 @@ ldapsearch -x -D "cn=manager,ou=local,dc=scisoftware,dc=pl" -W \
 
 **Expected result:** The `cn`, `uid`, and `entryuuid` attributes for the `slawas` user are returned. The `entryuuid` value will be identical to the unreadable `objectGUID` value from the previous test.
 
------
+---
 
 #### Test 4: Searching the subtree and checking `objectClass`
 
@@ -620,13 +623,13 @@ If you encounter errors or unexpected behavior, the following tips will help dia
 
 #### 6.4.3. Repository Configuration Issues in IBM WebSphere
 
-* **Federated Repository Configuration**: When adding a federated repository, specifying the root tree DN as the "Unique distinguished name of the base (or parent) entry in federated repositories" e.g. the value `dc=scisoftware,dc=pl` (container parameter `LDAP_BASED_OLC_SUFFIX`) may result in the error message: **Error CWWIM5018E The distinguished name [dc=scisoftware,dc=pl] of the base entry in the repository is invalid. Root cause: [LDAP: error code 32 - Unable to select valid candidates].**
+* **Federated Repository Configuration**: When adding a federated repository, specifying the root tree DN as the "Unique distinguished name of the base (or parent) entry in federated repositories" e.g. the value `dc=scisoftware,dc=pl` (container parameter `LDAP_BASED_OLC_SUFFIX`) may result in the error message: **`Error CWWIM5018E The distinguished name [dc=scisoftware,dc=pl] of the base entry in the repository is invalid. Root cause: [LDAP: error code 32 - Unable to select valid candidates]`**.
 * **Solution**: We'll solve the problem by first adding a repository pointing to the tree of one of the proxy connections, e.g. `ou=pluton,dc=scisoftware,dc=pl`, and then editing the `wimconfig.xml` configuration file located in the deployment environment's configuration directory (e.g. the `DmgrProfile` profile). Example file path and location: `/opt/IBM/BAW/20.0.0.1/profiles/DmgrProfile/config/cells/PCCell1/wim/config/wimconfig.xml`. When changing this, search for the just-configured value `ou=pluton,dc=scisoftware,dc=pl` and replace it with `dc=scisoftware,dc=pl`. Steps to follow:
-  * After adding the federated repository via the web console, **stop** the WebSphere servers. 
+  * After adding the federated repository via the web console, **stop** the WebSphere servers.
   * Edit the `wimconfig.xml` file located in the deployment environment's configuration directory, for example, using the `vim` application with the command `vim /opt/IBM/BAW/20.0.0.1/profiles/DmgrProfile/config/cells/PCCell1/wim/config/wimconfig.xml`:
     * Find and **replace** `<config:baseEntries name="ou=pluton,dc=scisoftware,dc=pl" nameInRepository="ou=pluton,dc=scisoftware,dc=pl"/>` with `<config:baseEntries name="dc=scisoftware,dc=pl" nameInRepository="dc=scisoftware,dc=pl"/>`
     * Find and **replace** `<config:participatingBaseEntries name="ou=pluton,dc=scisoftware,dc=pl"/>` to `<config:participatingBaseEntries name="ou=pluton,dc=scisoftware,dc=pl"/>`
-  * **Start** the WebSphere server environment. 
+  * **Start** the WebSphere server environment.
   
 After starting, we can verify in the WebSphere console whether users from each connected repository are visible. Go to **Users and Groups > Manage Users** and using the serach form we can test searching user data:
 
@@ -669,6 +672,7 @@ ldapsearch -x -H ldapi:/// -b "cn=config" -LLL > /var/backups/openldap_config_$(
 ```bash
 /usr/sbin/slapcat -l /var/backups/openldap_mdb_$(date +%Y%m%d%H%M%S)/mdb_backup.ldif -b "dc=scisoftware,dc=pl"
 ```
+
 *(Adjust the DN database to your `mdb` configuration.)*
 
 ### 7.2. Restoration Procedures
@@ -682,5 +686,3 @@ ldapsearch -x -H ldapi:/// -b "cn=config" -LLL > /var/backups/openldap_config_$(
 * [OpenLDAP Online Configuration Reference Mapping](https://tylersguides.com/guides/openldap-online-configuration-reference/)
 * [Combining OpenLDAP and Active Directory via OpenLDAP meta backend](https://serverfault.com/questions/1152227/combining-openldap-and-active-directory-via-openldap-meta-backend/1190129?noredirect=1#comment1542537_1190129)
 * Answers provided by Gemini (Google), 2025
-
-
